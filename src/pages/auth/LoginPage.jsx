@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
+import logo from '../../icons/logo.png';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -46,57 +48,68 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-lg bg-gradient-to-br from-[#305669] to-[#1F3A4A] mb-4">
-            <span className="text-2xl font-bold text-white">YK</span>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900">Yes Karangue</h1>
-          <p className="text-gray-600 mt-2">Tableau de bord administrateur</p>
+    <div className="min-h-screen relative overflow-hidden bg-[#F5F5F0] flex flex-col items-center justify-center p-4">
+      {/* Subtle Background Shapes */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-white/30 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gray-200/30 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
+        <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-gray-100/40 rounded-full blur-2xl"></div>
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10 w-full max-w-md">
+        {/* Logo */}
+        <div className="flex justify-center mb-8">
+          <img 
+            src={logo} 
+            alt="Yes Karangue" 
+            className="h-20 w-auto object-contain"
+          />
         </div>
 
-        {/* Login Form */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Login Card */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+          {/* Title */}
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Connexion</h1>
+            <p className="text-gray-600 text-sm">Accédez à votre espace admin</p>
+          </div>
+
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email Field */}
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Adresse email
               </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@yeskarangue.com"
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:border-transparent transition"
-                  required
-                />
-              </div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="votre@email.com"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD]/50 focus:border-[#5B9BAD] transition-all outline-none text-gray-900 placeholder:text-gray-400"
+                required
+              />
             </div>
 
             {/* Password Field */}
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Mot de passe
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:border-transparent transition"
+                  className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD]/50 focus:border-[#5B9BAD] transition-all outline-none text-gray-900 placeholder:text-gray-400"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5" />
@@ -107,29 +120,24 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Error Message */}
-            {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            )}
-
-            {/* Remember & Forgot Password */}
+            {/* Remember Me & Forgot Password */}
             <div className="flex items-center justify-between">
-              <label className="flex items-center">
+              <label className="flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  className="rounded border-gray-300 text-[#305669] focus:ring-[#305669]"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-[#5B9BAD] focus:ring-[#5B9BAD] focus:ring-offset-0 cursor-pointer"
                 />
-                <span className="ml-2 text-sm text-gray-600">
+                <span className="ml-2 text-sm text-gray-700">
                   Se souvenir de moi
                 </span>
               </label>
               <a
                 href="#"
-                className="text-sm text-[#305669] hover:text-[#1F3A4A] font-medium"
+                className="text-sm text-[#5B9BAD] hover:text-[#4A8999] font-medium transition"
               >
-                Mot de passe oublié?
+                Mot de passe oublié ?
               </a>
             </div>
 
@@ -137,19 +145,19 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-[#305669] to-[#1F3A4A] text-white font-semibold py-2.5 rounded-lg hover:shadow-lg transition disabled:opacity-50"
+              className="w-full bg-[#5B9BAD] hover:bg-[#4A8999] text-white font-semibold py-3 px-4 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
             >
               {loading ? 'Connexion...' : 'Se connecter'}
             </button>
           </form>
 
-          {/* Footer */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-center text-sm text-gray-600">
+          {/* Support Link */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
               Besoin d'aide?{' '}
               <a
                 href="#"
-                className="text-[#305669] hover:text-[#1F3A4A] font-medium"
+                className="text-[#5B9BAD] hover:text-[#4A8999] font-medium transition"
               >
                 Contact support
               </a>
@@ -157,20 +165,10 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Role Hints */}
-        <div className="mt-6 p-4 bg-white rounded-lg shadow border border-gray-200">
-          <p className="text-xs font-semibold text-gray-700 mb-2">💡 Astuce de connexion</p>
-          <div className="space-y-1 text-xs text-gray-600">
-            <p>• Email contenant <strong>"agent"</strong> → Espace Agent (enregistrement colis)</p>
-            <p>• Autres emails → Espace Admin (gestion complète)</p>
-          </div>
-        </div>
-
-        {/* Security Note */}
-        <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <p className="text-xs text-blue-700">
-            <strong>🔒 Sécurité:</strong> Connexion HTTPS - Toutes les données sont
-            chiffrées en transit.
+        {/* Footer */}
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-600">
+            © 2025 YES KARANGUE. Tous droits réservés.
           </p>
         </div>
       </div>

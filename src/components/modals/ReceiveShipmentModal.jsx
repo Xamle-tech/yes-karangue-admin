@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, QrCode, Keyboard, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, QrCode, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function ReceiveShipmentModal({ onClose, onReceive, shipments }) {
   const [method, setMethod] = useState('qr'); // 'qr' ou 'manual'
@@ -13,9 +13,8 @@ export default function ReceiveShipmentModal({ onClose, onReceive, shipments }) 
   const handleQrScan = (e) => {
     const code = e.target.value.trim();
     setQrCode(code);
-    
+
     if (code) {
-      // Chercher le colis par QR code
       const found = shipments.find((s) => s.id === code || s.trackingNumber === code);
       if (found) {
         setSelectedShipment(found);
@@ -37,7 +36,6 @@ export default function ReceiveShipmentModal({ onClose, onReceive, shipments }) 
       return;
     }
 
-    // Chercher le colis
     const found = shipments.find(
       (s) => s.id === manualCode || s.trackingNumber === manualCode
     );
@@ -55,8 +53,7 @@ export default function ReceiveShipmentModal({ onClose, onReceive, shipments }) 
     if (selectedShipment) {
       onReceive(selectedShipment);
       setSuccess('✓ Colis reçu avec succès!');
-      
-      // Réinitialiser après 2 secondes
+
       setTimeout(() => {
         setConfirmStep(false);
         setSelectedShipment(null);
@@ -77,23 +74,23 @@ export default function ReceiveShipmentModal({ onClose, onReceive, shipments }) 
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full">
+      <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-900">Réception de Colis</h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-lg transition"
+            className="p-1.5 hover:bg-gray-100 rounded-lg transition"
           >
             <X className="h-5 w-5 text-gray-600" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
+        <div className="p-6">
           {/* Success Message */}
           {success && (
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
               <p className="text-sm font-medium text-green-700">{success}</p>
             </div>
@@ -104,44 +101,23 @@ export default function ReceiveShipmentModal({ onClose, onReceive, shipments }) 
             <div className="space-y-4">
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <h3 className="font-bold text-gray-900 mb-3">Confirmer la réception</h3>
-                
-                {/* Shipment Details */}
+
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">ID:</span>
-                    <span className="font-semibold text-gray-900">
-                      {selectedShipment.id}
-                    </span>
+                    <span className="font-semibold text-gray-900">{selectedShipment.id}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Suivi:</span>
-                    <span className="font-semibold text-gray-900">
-                      {selectedShipment.trackingNumber}
-                    </span>
+                    <span className="font-semibold text-gray-900">{selectedShipment.trackingNumber}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Destinataire:</span>
-                    <span className="font-semibold text-gray-900">
-                      {selectedShipment.recipient}
-                    </span>
+                    <span className="font-semibold text-gray-900">{selectedShipment.recipient}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Téléphone:</span>
-                    <span className="font-semibold text-gray-900">
-                      {selectedShipment.recipientPhone}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Poids:</span>
-                    <span className="font-semibold text-gray-900">
-                      {selectedShipment.weight} kg
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Statut actuel:</span>
-                    <span className="font-semibold text-yellow-600">
-                      Étape {selectedShipment.status}
-                    </span>
+                    <span className="font-semibold text-gray-900">{selectedShipment.recipientPhone}</span>
                   </div>
                 </div>
 
@@ -150,7 +126,6 @@ export default function ReceiveShipmentModal({ onClose, onReceive, shipments }) 
                 </div>
               </div>
 
-              {/* Confirm Buttons */}
               <div className="flex gap-3">
                 <button
                   onClick={handleReset}
@@ -170,23 +145,22 @@ export default function ReceiveShipmentModal({ onClose, onReceive, shipments }) 
 
           {/* Method Selection */}
           {!confirmStep && (
-            <>
-              {/* Method Tabs */}
-              <div className="flex gap-2 mb-4">
+            <div className="space-y-6">
+              {/* Method Tabs - Button Style */}
+              <div className="flex gap-3">
                 <button
                   onClick={() => {
                     setMethod('qr');
                     setError('');
                     setManualCode('');
                   }}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium transition ${
-                    method === 'qr'
-                      ? 'bg-[#305669] text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-medium transition ${method === 'qr'
+                    ? 'bg-[#E8B44D] text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
                 >
-                  <QrCode className="h-4 w-4" />
-                  Scan QR
+                  <QrCode className="h-5 w-5" />
+                  Scanner un QR
                 </button>
                 <button
                   onClick={() => {
@@ -194,14 +168,15 @@ export default function ReceiveShipmentModal({ onClose, onReceive, shipments }) 
                     setError('');
                     setQrCode('');
                   }}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium transition ${
-                    method === 'manual'
-                      ? 'bg-[#305669] text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-medium transition ${method === 'manual'
+                    ? 'bg-[#E8B44D] text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
                 >
-                  <Keyboard className="h-4 w-4" />
-                  Saisie Manuelle
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Entrer un numéro
                 </button>
               </div>
 
@@ -215,36 +190,55 @@ export default function ReceiveShipmentModal({ onClose, onReceive, shipments }) 
 
               {/* QR Code Method */}
               {method === 'qr' && (
-                <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                    <div className="aspect-square bg-gray-200 rounded-lg flex items-center justify-center mb-3">
-                      <QrCode className="h-12 w-12 text-gray-400" />
+                <div className="space-y-6">
+                  {/* QR Code Scanner Area - Simple Design */}
+                  <div className="bg-gray-50 rounded-xl p-12 border border-gray-200">
+                    <div className="flex flex-col items-center justify-center">
+                      {/* Simple QR Code Icon */}
+                      <svg className="w-32 h-32 text-gray-300 mb-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 13h2v2h-2v-2zM15 15h2v2h-2v-2zM13 17h2v2h-2v-2zM15 19h2v2h-2v-2zM17 13h2v2h-2v-2zM19 15h2v2h-2v-2zM17 17h2v2h-2v-2zM19 19h2v2h-2v-2z" />
+                      </svg>
+
+                      <p className="text-sm text-gray-600 text-center">
+                        Le scanner capture automatiquement le code
+                      </p>
+
+                      <input
+                        type="text"
+                        autoFocus
+                        value={qrCode}
+                        onChange={handleQrScan}
+                        className="absolute opacity-0 w-0 h-0"
+                      />
                     </div>
-                    <p className="text-sm text-gray-600 text-center">
-                      Placez le lecteur QR ici
-                    </p>
                   </div>
 
-                  <input
-                    type="hidden"
-                    autoFocus
-                    value={qrCode}
-                    onChange={handleQrScan}
-                    placeholder="Scanner le QR code..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:border-transparent transition"
-                  />
-                  <p className="text-xs text-gray-500 text-center">
-                    Le scanner capture automatiquement le code
-                  </p>
+                  {/* Buttons */}
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={handleReset}
+                      className="flex-1 px-4 py-3 bg-[#E8B44D] text-white rounded-lg font-semibold hover:bg-[#D9A53C] transition shadow-sm"
+                    >
+                      Rechercher le colis
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
+                    >
+                      Annuler
+                    </button>
+                  </div>
                 </div>
               )}
 
               {/* Manual Input Method */}
               {method === 'manual' && (
-                <form onSubmit={handleManualSubmit} className="space-y-4">
+                <form onSubmit={handleManualSubmit} className="space-y-6">
                   <div>
                     <label className="block text-sm font-semibold text-gray-900 mb-2">
-                      Numéro de colis ou ID de suivi
+                      Numéro de colis ou ID de suivi <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -253,33 +247,33 @@ export default function ReceiveShipmentModal({ onClose, onReceive, shipments }) 
                         setManualCode(e.target.value);
                         setError('');
                       }}
-                      placeholder="Ex: YK-2025-00001 ou TRK001"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:border-transparent transition"
+                      placeholder="Ex. YK-2025-001"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E8B44D]/50 focus:border-[#E8B44D] transition-all outline-none"
                       autoFocus
                     />
                   </div>
 
-                  <button
-                    type="submit"
-                    className="w-full px-4 py-2.5 bg-[#305669] text-white rounded-lg font-medium hover:bg-[#1F3A4A] transition"
-                  >
-                    Rechercher Colis
-                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      type="submit"
+                      className="flex-1 px-4 py-3 bg-[#E8B44D] text-white rounded-lg font-semibold hover:bg-[#D9A53C] transition shadow-sm"
+                    >
+                      Rechercher le colis
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
+                    >
+                      Annuler
+                    </button>
+                  </div>
                 </form>
               )}
-
-              {/* Info Box */}
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-xs text-blue-700">
-                  <strong>💡 Conseil:</strong> Utilisez le scan QR pour plus de rapidité.
-                  Si le scanner ne fonctionne pas, saisissez manuellement le numéro.
-                </p>
-              </div>
-            </>
+            </div>
           )}
         </div>
       </div>
     </div>
   );
 }
-

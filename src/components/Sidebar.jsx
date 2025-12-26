@@ -10,11 +10,12 @@ import {
   ClipboardList,
   MapPin,
 } from 'lucide-react';
+import logo from '../icons/logo.png';
 
 export default function Sidebar({ collapsed }) {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Récupérer le rôle de l'utilisateur
   const userRole = localStorage.getItem('userRole') || 'admin';
   const isAgent = userRole === 'agent';
@@ -29,12 +30,12 @@ export default function Sidebar({ collapsed }) {
     { icon: MapPin, label: 'Points de Retrait', path: '/points' },
     { icon: Settings, label: 'Paramètres', path: '/settings' },
   ];
-  
+
   // Menu pour Agent (simplifié - uniquement colis)
   const agentMenuItems = [
     { icon: ClipboardList, label: 'Gestion des Colis', path: '/agent' },
   ];
-  
+
   // Choisir le bon menu selon le rôle
   const menuItems = isAgent ? agentMenuItems : adminMenuItems;
 
@@ -52,14 +53,15 @@ export default function Sidebar({ collapsed }) {
     <div className="h-full bg-white border-r border-gray-200 flex flex-col">
       {/* Logo */}
       <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center justify-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#305669] to-[#1F3A4A] flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-lg">YK</span>
-          </div>
+        <div className="flex items-center gap-3">
+          <img
+            src={logo}
+            alt="Yes Karangue"
+            className={`object-contain transition-all ${collapsed ? 'h-10 w-10' : 'h-12 w-auto'}`}
+          />
           {!collapsed && (
-            <div>
-              <p className="font-bold text-gray-900 text-sm">YES KARANGUE</p>
-              <p className="text-xs text-gray-600">{isAgent ? 'Agent' : 'Admin'}</p>
+            <div className="flex-1">
+              <p className="text-xs text-gray-500">{isAgent ? 'Agent' : 'Admin'}</p>
             </div>
           )}
         </div>
@@ -75,11 +77,10 @@ export default function Sidebar({ collapsed }) {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                active
-                  ? 'bg-[#305669] text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${active
+                ? 'bg-[#305669] text-white'
+                : 'text-gray-700 hover:bg-gray-100'
+                }`}
               title={item.label}
             >
               <Icon className="h-5 w-5 flex-shrink-0" />
