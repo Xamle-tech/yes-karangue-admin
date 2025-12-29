@@ -57,16 +57,16 @@ function App() {
                 </ProtectedRoute>
               }
             />
-                    <Route
-                      path="/clients"
-                      element={
-                        <ProtectedRoute requireAdmin={true}>
-                          <Layout onLogout={handleLogout}>
-                            <ClientsPage />
-                          </Layout>
-                        </ProtectedRoute>
-                      }
-                    />
+            <Route
+              path="/clients"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <Layout onLogout={handleLogout}>
+                    <ClientsPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/shipments"
               element={

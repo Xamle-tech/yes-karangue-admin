@@ -124,20 +124,17 @@ export default function Header({
 
           {/* User Dropdown */}
           {showUserMenu && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+            <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
               <div className="p-4 border-b border-gray-200">
-                <p className="font-semibold text-gray-900 text-sm">{userEmail}</p>
+                <p className="font-semibold text-gray-900 text-sm truncate" title={userEmail}>
+                  {userEmail}
+                </p>
                 <p className="text-xs text-gray-500 mt-1">{isAgent ? 'Agent' : 'Administrateur'}</p>
               </div>
               <div className="p-2 space-y-1">
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition">
-                  Profil
-                </button>
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition">
-                  Paramètres
-                </button>
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition">
-                  Aide
+                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Mon compte
                 </button>
               </div>
               <div className="p-2 border-t border-gray-200">
@@ -146,7 +143,7 @@ export default function Header({
                   className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded transition font-medium"
                 >
                   <LogOut className="h-4 w-4" />
-                  Déconnexion
+                  Se déconnecter
                 </button>
               </div>
             </div>

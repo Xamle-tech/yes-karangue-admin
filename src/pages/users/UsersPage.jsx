@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, MapPin, Phone, Mail } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, Trash2, MapPin, ChevronDown, LayoutGrid, List as ListIcon } from 'lucide-react';
 import UserForm from '../../components/forms/UserForm';
 
 export default function UsersPage() {
@@ -7,37 +7,52 @@ export default function UsersPage() {
     {
       id: 1,
       name: 'Mama Diallo',
+      initials: 'MD',
       email: 'mama@example.com',
       phone: '+221 77 123 45 67',
-      role: 'client',
+      role: 'Client',
+      roleColor: 'bg-blue-100 text-blue-700',
       pointName: 'Point Dakar Centre',
       location: 'Dakar',
       credits: 15000,
-      status: 'active',
+      status: 'Actif',
+      statusColor: 'bg-green-100 text-green-700',
+      online: true,
+      avatarColor: 'bg-emerald-500',
       joinDate: '2025-01-01',
     },
     {
       id: 2,
       name: 'Mouhamadou Ba',
+      initials: 'MB',
       email: 'mouhamadou@example.com',
       phone: '+221 78 234 56 78',
-      role: 'point_manager',
+      role: 'Gestionnaire Point',
+      roleColor: 'bg-green-100 text-green-700',
       pointName: 'Point Thiès Est',
       location: 'Thiès',
       credits: 0,
-      status: 'active',
+      status: 'Actif',
+      statusColor: 'bg-green-100 text-green-700',
+      online: true,
+      avatarColor: 'bg-teal-500',
       joinDate: '2024-12-20',
     },
     {
       id: 3,
       name: 'Fatoumata Sow',
+      initials: 'FS',
       email: 'fatoumata@example.com',
       phone: '+221 76 345 67 89',
-      role: 'admin',
+      role: 'Administrateur',
+      roleColor: 'bg-purple-100 text-purple-700',
       pointName: null,
       location: null,
       credits: 0,
-      status: 'active',
+      status: 'Inactif',
+      statusColor: 'bg-red-100 text-red-700',
+      online: false,
+      avatarColor: 'bg-orange-500',
       joinDate: '2024-11-15',
     },
   ]);
@@ -46,6 +61,8 @@ export default function UsersPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [filterRole, setFilterRole] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [viewMode, setViewMode] = useState('list');
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
@@ -53,7 +70,8 @@ export default function UsersPage() {
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.phone.includes(searchTerm);
     const matchesRole = filterRole === 'all' || user.role === filterRole;
-    return matchesSearch && matchesRole;
+    const matchesStatus = filterStatus === 'all' || user.status === filterStatus;
+    return matchesSearch && matchesRole && matchesStatus;
   });
 
   const handleAddUser = (formData) => {
@@ -66,7 +84,9 @@ export default function UsersPage() {
         {
           id: Date.now(),
           ...formData,
-          status: 'active',
+          status: 'Actif',
+          statusColor: 'bg-green-100 text-green-700',
+          online: true,
           joinDate: new Date().toISOString().split('T')[0],
         },
       ]);
@@ -80,23 +100,9 @@ export default function UsersPage() {
     }
   };
 
-  const getRoleColor = (role) => {
-    const colors = {
-      client: 'bg-blue-100 text-blue-800',
-      point_manager: 'bg-green-100 text-green-800',
-      admin: 'bg-purple-100 text-purple-800',
-    };
-    return colors[role] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getRoleLabel = (role) => {
-    const labels = {
-      client: 'Client',
-      point_manager: 'Gestionnaire Point',
-      admin: 'Administrateur',
-    };
-    return labels[role] || role;
-  };
+  const totalCredits = users.reduce((sum, u) => sum + u.credits, 0);
+  const clientsCount = users.filter((u) => u.role === 'Client').length;
+  const pointsCount = users.filter((u) => u.role === 'Gestionnaire Point').length;
 
   return (
     <div className="space-y-6">
@@ -113,7 +119,7 @@ export default function UsersPage() {
             setEditingUser(null);
             setShowForm(true);
           }}
-          className="flex items-center gap-2 bg-[#305669] text-white px-4 py-2.5 rounded-lg hover:shadow-lg transition font-medium"
+          className="flex items-center gap-2 bg-[#E8B44D] text-white px-5 py-2.5 rounded-lg hover:bg-[#D9A53C] transition font-medium shadow-sm"
         >
           <Plus className="h-5 w-5" />
           Ajouter un utilisateur
@@ -129,155 +135,265 @@ export default function UsersPage() {
         />
       )}
 
-      {/* Stats */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <p className="text-sm text-gray-600">Utilisateurs total</p>
-          <p className="text-2xl font-bold text-gray-900 mt-2">{users.length}</p>
+        {/* Utilisateurs total */}
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 mb-1">Utilisateurs total</p>
+              <p className="text-3xl font-bold text-gray-900">{users.length}</p>
+            </div>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+          </div>
         </div>
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <p className="text-sm text-gray-600">Clients</p>
-          <p className="text-2xl font-bold text-blue-600">
-            {users.filter((u) => u.role === 'client').length}
-          </p>
+
+        {/* Clients */}
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 mb-1">Clients</p>
+              <p className="text-3xl font-bold text-blue-600">{clientsCount}</p>
+            </div>
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <svg className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+          </div>
         </div>
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <p className="text-sm text-gray-600">Points de retrait</p>
-          <p className="text-2xl font-bold text-green-600">
-            {users.filter((u) => u.role === 'point_manager').length}
-          </p>
+
+        {/* Points de retrait */}
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 mb-1">Points de retrait</p>
+              <p className="text-3xl font-bold text-yellow-600">{pointsCount}</p>
+            </div>
+            <div className="bg-yellow-50 p-3 rounded-lg">
+              <MapPin className="h-6 w-6 text-yellow-500" />
+            </div>
+          </div>
         </div>
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <p className="text-sm text-gray-600">Crédits totaux</p>
-          <p className="text-2xl font-bold text-purple-600">
-            {users.reduce((sum, u) => sum + u.credits, 0).toLocaleString()} FCFA
-          </p>
+
+        {/* Crédits totaux */}
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 mb-1">Crédits totaux</p>
+              <p className="text-2xl font-bold text-green-600">{totalCredits.toLocaleString()} FCFA</p>
+            </div>
+            <div className="bg-green-50 p-3 rounded-lg">
+              <svg className="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Rechercher par nom, email ou téléphone..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:border-transparent transition"
-          />
+      {/* Search and Filters */}
+      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+        <div className="flex flex-col md:flex-row gap-4 items-center">
+          {/* Search */}
+          <div className="flex-1 w-full relative">
+            <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Rechercher par nom, email ou téléphone..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none"
+            />
+          </div>
+
+          {/* Filters */}
+          <div className="flex gap-2">
+            {/* Status Filter */}
+            <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium text-gray-700 bg-white">
+              <span>Tous les statuts</span>
+              <ChevronDown className="h-4 w-4" />
+            </button>
+
+            {/* Role Filter */}
+            <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium text-gray-700 bg-white">
+              <span>Tous les rôles</span>
+              <ChevronDown className="h-4 w-4" />
+            </button>
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2.5 transition ${
+                  viewMode === 'grid' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <LayoutGrid className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2.5 transition ${
+                  viewMode === 'list' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <ListIcon className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
         </div>
-        <select
-          value={filterRole}
-          onChange={(e) => setFilterRole(e.target.value)}
-          className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:border-transparent transition"
-        >
-          <option value="all">Tous les rôles</option>
-          <option value="client">Clients</option>
-          <option value="point_manager">Points de retrait</option>
-          <option value="admin">Administrateurs</option>
-        </select>
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                Nom
-              </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                Contact
-              </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                Rôle
-              </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                Point / Localisation
-              </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                Statut
-              </th>
-              <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {filteredUsers.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50 transition">
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                  {user.name}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-gray-400" />
-                    {user.email}
-                  </div>
-                  <div className="flex items-center gap-2 mt-1 text-xs">
-                    <Phone className="h-3 w-3 text-gray-400" />
-                    {user.phone}
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm">
-                  <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getRoleColor(
-                      user.role
-                    )}`}
-                  >
-                    {getRoleLabel(user.role)}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600">
-                  {user.pointName ? (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-gray-400" />
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  Nom
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  Téléphone
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  Email
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  Point / Localisation
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  Statut
+                </th>
+                <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredUsers.map((user, index) => (
+                <tr 
+                  key={user.id} 
+                  className={`hover:bg-gray-50 transition ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
+                >
+                  {/* Nom avec avatar et initiales */}
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <div className={`w-10 h-10 rounded-full ${user.avatarColor} flex items-center justify-center text-white font-semibold text-sm`}>
+                          {user.initials}
+                        </div>
+                        {user.online && (
+                          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                        )}
+                      </div>
                       <div>
-                        <p className="font-medium text-gray-900">{user.pointName}</p>
-                        <p className="text-xs text-gray-500">{user.location}</p>
+                        <p className="font-semibold text-gray-900 text-sm">{user.name}</p>
+                        <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${user.roleColor}`}>
+                          {user.role}
+                        </span>
                       </div>
                     </div>
-                  ) : (
-                    <span className="text-gray-400">N/A</span>
-                  )}
-                </td>
-                <td className="px-6 py-4 text-sm">
-                  <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                      user.status === 'active'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {user.status === 'active' ? 'Actif' : 'Inactif'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => {
-                        setEditingUser(user);
-                        setShowForm(true);
-                      }}
-                      className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition"
-                      title="Modifier"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteUser(user.id)}
-                      className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition"
-                      title="Supprimer"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </td>
+
+                  {/* Téléphone */}
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {user.phone}
+                  </td>
+
+                  {/* Email */}
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {user.email}
+                  </td>
+
+                  {/* Point / Localisation */}
+                  <td className="px-6 py-4 text-sm">
+                    {user.pointName ? (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-gray-400" />
+                        <div>
+                          <p className="font-medium text-gray-900">{user.pointName}</p>
+                          <p className="text-xs text-gray-500">{user.location}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">N/A</span>
+                    )}
+                  </td>
+
+                  {/* Statut */}
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold ${user.statusColor}`}>
+                      {user.status}
+                    </span>
+                  </td>
+
+                  {/* Actions */}
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition"
+                        title="Voir"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingUser(user);
+                          setShowForm(true);
+                        }}
+                        className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition"
+                        title="Modifier"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="border-t border-gray-200 px-6 py-3">
+          <div className="flex items-center justify-between text-sm text-gray-600">
+            <div>
+              <span className="font-medium">éléments par page: </span>
+              <select className="ml-2 border border-gray-300 rounded px-2 py-1 text-sm">
+                <option>10</option>
+                <option>25</option>
+                <option>50</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-4">
+              <span>1 - 1 sur {filteredUsers.length}</span>
+              <div className="flex gap-1">
+                <button className="p-1.5 hover:bg-gray-100 rounded transition">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button className="p-1.5 hover:bg-gray-100 rounded transition">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Empty State */}

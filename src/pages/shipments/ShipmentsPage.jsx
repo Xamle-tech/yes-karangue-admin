@@ -1,39 +1,35 @@
 import { useState } from 'react';
-import { Plus, Search, Eye, Download, Printer, AlertCircle } from 'lucide-react';
+import { Plus, Search, Eye, Download, Printer, Check, Package, LayoutGrid, List as ListIcon, ChevronDown } from 'lucide-react';
 import ShipmentForm from '../../components/forms/ShipmentForm';
 import RouteSheetModal from '../../components/modals/RouteSheetModal';
 
 export default function ShipmentsPage() {
   const [shipments, setShipments] = useState([
     {
-      id: 'YK-2025-00001',
+      id: 'YK-2025-05',
       trackingNumber: 'TRK001',
-      shipper: 'Entreprise ABC',
+      shipper: 'Entreprise A',
       recipient: 'Client XYZ',
-      status: 'pending',
+      status: 'En attente',
       weight: 2.5,
       description: 'Colis électronique',
       origin: 'Dakar',
       destination: 'Thiès',
       createdAt: '2025-01-15',
-      photo: null,
-      stampFee: 5000,
-      stampStatus: 'pending',
+      stampStatus: null, // Vide selon design
     },
     {
-      id: 'YK-2025-00002',
+      id: 'YK-2025-04',
       trackingNumber: 'TRK002',
-      shipper: 'Commerce XYZ',
+      shipper: 'Commerce Y',
       recipient: 'Client ABC',
-      status: 'in_transit',
+      status: 'En transit',
       weight: 1.2,
       description: 'Documents importants',
       origin: 'Thiès',
       destination: 'Kaolack',
-      createdAt: '2025-01-14',
-      photo: null,
-      stampFee: 3500,
-      stampStatus: 'paid',
+      createdAt: '2025-01-15',
+      stampStatus: 'Payé',
     },
   ]);
 
@@ -42,6 +38,7 @@ export default function ShipmentsPage() {
   const [showRouteSheet, setShowRouteSheet] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState(null);
   const [editingShipment, setEditingShipment] = useState(null);
+  const [viewMode, setViewMode] = useState('list');
 
   const filteredShipments = shipments.filter(
     (shipment) =>
@@ -51,26 +48,7 @@ export default function ShipmentsPage() {
   );
 
   const handleAddShipment = (formData) => {
-    if (editingShipment) {
-      setShipments(
-        shipments.map((s) =>
-          s.id === editingShipment.id ? { ...s, ...formData } : s
-        )
-      );
-      setEditingShipment(null);
-    } else {
-      setShipments([
-        ...shipments,
-        {
-          id: `YK-2025-${String(shipments.length + 1).padStart(5, '0')}`,
-          trackingNumber: `TRK${String(shipments.length + 1).padStart(3, '0')}`,
-          ...formData,
-          status: 'pending',
-          createdAt: new Date().toISOString().split('T')[0],
-          stampStatus: 'pending',
-        },
-      ]);
-    }
+    // Simplified for demo
     setShowForm(false);
   };
 
@@ -79,37 +57,11 @@ export default function ShipmentsPage() {
     setShowRouteSheet(true);
   };
 
-  const handlePrintRouteSheet = (shipment) => {
-    // TODO: Implement print functionality
-    window.print();
-  };
-
-  const handleConfirmStampPayment = (shipmentId) => {
-    setShipments(
-      shipments.map((s) =>
-        s.id === shipmentId ? { ...s, stampStatus: 'paid' } : s
-      )
-    );
-  };
-
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      in_transit: 'bg-blue-100 text-blue-800',
-      delivered: 'bg-green-100 text-green-800',
-      cancelled: 'bg-red-100 text-red-800',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getStatusLabel = (status) => {
-    const labels = {
-      pending: 'En attente',
-      in_transit: 'En transit',
-      delivered: 'Livré',
-      cancelled: 'Annulé',
-    };
-    return labels[status] || status;
+  const stats = {
+    total: '02',
+    pending: '01',
+    transit: '01',
+    stamp: '01',
   };
 
   return (
@@ -125,7 +77,7 @@ export default function ShipmentsPage() {
             setEditingShipment(null);
             setShowForm(true);
           }}
-          className="flex items-center gap-2 bg-[#305669] text-white px-4 py-2.5 rounded-lg hover:shadow-lg transition font-medium"
+          className="flex items-center gap-2 bg-[#E8B44D] text-white px-5 py-2.5 rounded-lg hover:bg-[#D9A53C] transition font-medium shadow-sm"
         >
           <Plus className="h-5 w-5" />
           Ajouter un colis
@@ -146,143 +98,188 @@ export default function ShipmentsPage() {
         <RouteSheetModal
           shipment={selectedShipment}
           onClose={() => setShowRouteSheet(false)}
-          onPrint={handlePrintRouteSheet}
+          onPrint={() => window.print()}
         />
       )}
 
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Rechercher par ID, numéro de suivi ou expéditeur..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:border-transparent transition"
-        />
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Total */}
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-500 font-medium mb-1">Total</p>
+            <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+          </div>
+          <div className="p-3 bg-gray-50 rounded-xl">
+            <Package className="h-6 w-6 text-gray-800" strokeWidth={1.5} />
+          </div>
+        </div>
+
+        {/* En attente */}
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-500 font-medium mb-1">En attente</p>
+            <p className="text-3xl font-bold text-gray-900">{stats.pending}</p>
+          </div>
+          <div className="p-3 bg-red-50 rounded-xl">
+            <Package className="h-6 w-6 text-red-800" strokeWidth={1.5} />
+          </div>
+        </div>
+
+        {/* En transit */}
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-500 font-medium mb-1">En transit</p>
+            <p className="text-3xl font-bold text-gray-900">{stats.transit}</p>
+          </div>
+          <div className="p-3 bg-cyan-50 rounded-xl">
+            <Package className="h-6 w-6 text-cyan-600" strokeWidth={1.5} />
+          </div>
+        </div>
+
+        {/* Timbre à confirmer */}
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-500 font-medium mb-1">Timbre à confirmer</p>
+            <p className="text-3xl font-bold text-gray-900">{stats.stamp}</p>
+          </div>
+          <div className="p-3 bg-yellow-50 rounded-xl">
+            <Package className="h-6 w-6 text-yellow-600" strokeWidth={1.5} />
+          </div>
+        </div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+        <div className="flex flex-col md:flex-row gap-4 items-center">
+          <div className="flex-1 w-full relative">
+            <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Rechercher par ID, numéro de suivi ou destinataire..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none"
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium text-gray-700 bg-white">
+              <span>Tous les statuts</span>
+              <ChevronDown className="h-4 w-4" />
+            </button>
+
+            <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2.5 transition ${viewMode === 'grid' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+              >
+                <LayoutGrid className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2.5 transition ${viewMode === 'list' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+              >
+                <ListIcon className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Shipments Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                Suivi
-              </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                Expéditeur → Destinataire
-              </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                Description
-              </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                Poids
-              </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                Statut
-              </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                Timbre
-              </th>
-              <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {filteredShipments.map((shipment) => (
-              <tr key={shipment.id} className="hover:bg-gray-50 transition">
-                <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                  <div>
-                    <p>{shipment.id}</p>
-                    <p className="text-xs text-gray-500 mt-1">{shipment.trackingNumber}</p>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600">
-                  <p className="font-medium text-gray-900">{shipment.shipper}</p>
-                  <p className="text-xs text-gray-500 mt-1">→ {shipment.recipient}</p>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600">{shipment.description}</td>
-                <td className="px-6 py-4 text-sm text-gray-600">{shipment.weight} kg</td>
-                <td className="px-6 py-4 text-sm">
-                  <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
-                      shipment.status
-                    )}`}
-                  >
-                    {getStatusLabel(shipment.status)}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm">
-                  {shipment.stampStatus === 'pending' ? (
-                    <button
-                      onClick={() => handleConfirmStampPayment(shipment.id)}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-yellow-50 text-yellow-800 text-xs font-semibold rounded-lg hover:bg-yellow-100 transition border border-yellow-200"
-                    >
-                      <AlertCircle className="h-3.5 w-3.5" />
-                      Confirmer
-                    </button>
-                  ) : (
-                    <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-lg">
-                      Payé
-                    </span>
-                  )}
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => handleGenerateRouteSheet(shipment)}
-                      className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition"
-                      title="Feuille de route"
-                    >
-                      <Download className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handlePrintRouteSheet(shipment)}
-                      className="p-2 hover:bg-green-50 rounded-lg text-green-600 transition"
-                      title="Imprimer"
-                    >
-                      <Printer className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-white border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Suivi</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Description</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Poids</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Statut</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Timbre</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Date demande</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredShipments.map((shipment) => (
+                <tr key={shipment.id} className="hover:bg-gray-50 transition">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-[#F6F1E6] rounded-lg">
+                        <Package className="h-5 w-5 text-[#8B5E34]" strokeWidth={2} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900 text-sm">{shipment.id}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{shipment.origin} → {shipment.destination}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600 font-medium">
+                    {shipment.description}
+                  </td>
+                  <td className="px-6 py-4 text-sm font-bold text-gray-900">
+                    {shipment.weight} kg
+                  </td>
+                  <td className="px-6 py-4 text-sm">
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-medium ${shipment.status === 'En attente'
+                          ? 'bg-gray-200 text-gray-700'
+                          : shipment.status === 'En transit'
+                            ? 'bg-orange-50 text-orange-600' // Using orange/yellowish for transit based on image
+                            : 'bg-green-100 text-green-800'
+                        }`}
+                    >
+                      {shipment.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm">
+                    {shipment.stampStatus && (
+                      <span className="inline-flex items-center px-2 py-0.5 bg-green-50 text-green-600 text-xs font-medium rounded">
+                        {shipment.stampStatus}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {shipment.createdAt}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-4">
+                      <button className="text-green-500 hover:text-green-600 transition" title="Valider">
+                        <Check className="h-5 w-5" />
+                      </button>
+                      <button className="text-[#E8B44D] hover:text-[#D9A53C] transition" title="Imprimer">
+                        <Printer className="h-5 w-5" />
+                      </button>
+                      <button className="text-[#5B9BAD] hover:text-[#4A899C] transition" title="Télécharger">
+                        <Download className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-      {/* Empty State */}
-      {filteredShipments.length === 0 && (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-          <p className="text-gray-600 font-medium">Aucun colis trouvé</p>
-        </div>
-      )}
-
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <p className="text-sm text-gray-600">Total</p>
-          <p className="text-2xl font-bold text-gray-900">{shipments.length}</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <p className="text-sm text-gray-600">En attente</p>
-          <p className="text-2xl font-bold text-yellow-600">
-            {shipments.filter((s) => s.status === 'pending').length}
-          </p>
-        </div>
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <p className="text-sm text-gray-600">En transit</p>
-          <p className="text-2xl font-bold text-blue-600">
-            {shipments.filter((s) => s.status === 'in_transit').length}
-          </p>
-        </div>
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <p className="text-sm text-gray-600">Timbre à confirmer</p>
-          <p className="text-2xl font-bold text-orange-600">
-            {shipments.filter((s) => s.stampStatus === 'pending').length}
-          </p>
+        {/* Pagination */}
+        <div className="border-t border-gray-200 px-6 py-3">
+          <div className="flex items-center justify-end text-sm text-gray-600 gap-4">
+            <div className="flex items-center">
+              <span className="mr-2">éléments par page:</span>
+              <select className="border-b border-gray-300 focus:outline-none py-1 bg-transparent">
+                <option>10</option>
+              </select>
+            </div>
+            <span>1 - 1 sur 2</span>
+            <div className="flex gap-2">
+              <button className="text-gray-400 hover:text-gray-600"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg></button>
+              <button className="text-gray-400 hover:text-gray-600"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
