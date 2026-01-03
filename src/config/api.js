@@ -15,6 +15,7 @@ export const AUTH_ENDPOINTS = {
     REFRESH_TOKEN: '/api/v1/auth/refresh',
     ME: '/api/v1/auth/me',
     ADMIN_DASHBOARD: '/api/v1/admin/dashboard',
+    ADMIN_TRANSPORTERS: '/api/v1/admin/transporters',
 };
 
 // Autres endpoints

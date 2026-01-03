@@ -1,50 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, Eye, LayoutGrid, List as ListIcon, ChevronDown, Truck, Bike, Car, Star } from 'lucide-react';
 import TransporterForm from '../../components/forms/TransporterForm';
+import { fetchTransporters } from '../../services/transporterService';
 
 export default function TransportersPage() {
-  const [transporters, setTransporters] = useState([
-    {
-      id: 1,
-      name: 'Transport ABC',
-      email: 'contact@abc-transport.com',
-      phone: '+221 77 123 45 67',
-      vehicleType: 'Car',
-      vehicleModel: 'Peugeot Partner',
-      vehiclePlate: 'DK 1234 AA',
-      deliveries: 245,
-      totalEarnings: '5.2M',
-      status: 'Actif',
-      initials: 'TA',
-    },
-    {
-      id: 2,
-      name: 'Logistique XYZ',
-      email: 'info@logistique-xyz.com',
-      phone: '+221 78 987 65 43',
-      vehicleType: 'Truck',
-      vehicleModel: 'Renault Master',
-      vehiclePlate: 'DK 5678 BB',
-      deliveries: 198,
-      totalEarnings: '4.1M',
-      status: 'Actif',
-      initials: 'LX',
-    },
-    {
-      id: 3,
-      name: 'Express Sénégal',
-      email: 'support@express-senegal.com',
-      phone: '+221 76 555 44 33',
-      vehicleType: 'Bike',
-      vehicleModel: 'Yamaha 125',
-      vehiclePlate: 'DK 9012 CC',
-      deliveries: 167,
-      totalEarnings: '3.4M',
-      status: 'Actif',
-      initials: 'ES',
-    },
-  ]);
-
+  const [transporters, setTransporters] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingTransporter, setEditingTransporter] = useState(null);
@@ -168,15 +129,15 @@ export default function TransportersPage() {
             <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2.5 transition ${viewMode === 'grid' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
-                  }`}
+                className={`p - 2.5 transition ${viewMode === 'grid' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
+                  } `}
               >
                 <LayoutGrid className="h-5 w-5" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2.5 transition ${viewMode === 'list' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
-                  }`}
+                className={`p - 2.5 transition ${viewMode === 'list' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
+                  } `}
               >
                 <ListIcon className="h-5 w-5" />
               </button>
@@ -187,73 +148,88 @@ export default function TransportersPage() {
 
       {/* Transporters Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Transporteur</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Véhicule</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Téléphone</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Email</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Livraisons</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Revenus</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Statut</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredTransporters.map((transporter, index) => (
-                <tr
-                  key={transporter.id}
-                  className={`hover:bg-gray-50 transition ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
-                >
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-600 font-bold text-xs">
-                        {transporter.initials}
-                      </div>
-                      <p className="font-semibold text-gray-900 text-sm">{transporter.name}</p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      {getVehicleIcon(transporter.vehicleType)}
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">{transporter.vehiclePlate}</p>
-                        <p className="text-xs text-gray-500">{transporter.vehicleModel}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{transporter.phone}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{transporter.email}</td>
-                  <td className="px-6 py-4 text-sm font-bold text-blue-600">{transporter.deliveries}</td>
-                  <td className="px-6 py-4 text-sm font-bold text-green-600">{transporter.totalEarnings}</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      {transporter.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button className="p-2 hover:bg-gray-100 rounded-lg text-[#E8B44D] transition">
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteTransporter(transporter.id)}
-                        className="p-2 hover:bg-gray-100 rounded-lg text-red-500 transition"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
+        {loading ? (
+          <div className="p-8 text-center text-gray-500">Chargement des transporteurs...</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Transporteur</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Véhicule</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Téléphone</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Email</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Livraisons</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Revenus</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Statut</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredTransporters.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" className="px-6 py-8 text-center text-gray-500">
+                      Aucun transporteur trouvé
+                    </td>
+                  </tr>
+                ) : (
+                  filteredTransporters.map((transporter, index) => {
+                    const profile = transporter.transporter_profile || {};
+                    return (
+                      <tr
+                        key={transporter.id}
+                        className={`hover:bg-gray-50 transition ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-600 font-bold text-xs">
+                              {getInitials(transporter.name)}
+                            </div>
+                            <p className="font-semibold text-gray-900 text-sm">{transporter.name}</p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            {getVehicleIcon(profile.vehicle_type || 'Truck')}
+                            <div>
+                              <p className="font-medium text-gray-900 text-sm">{profile.vehicle_plate || 'N/A'}</p>
+                              <p className="text-xs text-gray-500">{profile.vehicle_model || 'Non renseigné'}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{transporter.phone}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{transporter.email}</td>
+                        <td className="px-6 py-4 text-sm font-bold text-blue-600">{transporter.deliveries_count || 0}</td>
+                        <td className="px-6 py-4 text-sm font-bold text-green-600">{transporter.total_earnings || 0}</td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${transporter.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                            {transporter.status || 'Inconnu'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition">
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            <button className="p-2 hover:bg-gray-100 rounded-lg text-[#E8B44D] transition">
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTransporter(transporter.id)}
+                              className="p-2 hover:bg-gray-100 rounded-lg text-red-500 transition"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  }))}
+              </tbody>
+            </table>
+          </div>
+        )}
         <div className="border-t border-gray-200 px-6 py-3 flex justify-end">
           <span className="text-sm text-gray-500">1 - 3 sur 3</span>
         </div>
