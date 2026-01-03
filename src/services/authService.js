@@ -23,6 +23,7 @@ export const login = async (email, password) => {
                 email: email,
                 password: password,
             }),
+            credentials: 'include', // Important pour recevoir le cookie httpOnly
         });
 
         // Vérifier si la réponse est OK
@@ -95,9 +96,65 @@ export const refreshToken = async () => {
         throw new Error('Token non reçu');
     } catch (error) {
         console.error('Erreur lors du rafraîchissement du token:', error);
-        // En cas d'échec (token expiré ou invalide), on déconnecte l'utilisateur
-        logout();
+        // Ne pas déconnecter automatiquement pour l'instant pour debug
+        // logout();
         throw error;
+    }
+};
+
+/**
+ * Récupère les informations de l'utilisateur connecté depuis l'API
+ * @returns {Promise<Object>} Les données de l'utilisateur
+ */
+export const fetchCurrentUser = async () => {
+    try {
+        const token = localStorage.getItem('authToken');
+        console.log('Fetching current user with token:', token ? 'Present' : 'Missing');
+
+        const response = await fetch(buildUrl(AUTH_ENDPOINTS.ME), {
+            method: 'GET',
+            headers: getDefaultHeaders(),
+            credentials: 'include',
+        });
+
+        if (!response.ok) {
+            console.error('Error fetching user:', response.status);
+            if (response.status === 401) {
+                // Token expiré, essayer de rafraîchir
+                try {
+                    await refreshToken();
+                    // Réessayer la requête avec le nouveau token
+                    const retryResponse = await fetch(buildUrl(AUTH_ENDPOINTS.ME), {
+                        method: 'GET',
+                        headers: getDefaultHeaders(),
+                        credentials: 'include',
+                    });
+
+                    if (retryResponse.ok) {
+                        const data = await retryResponse.json();
+                        if (data) {
+                            localStorage.setItem('userData', JSON.stringify(data));
+                        }
+                        return data;
+                    }
+                } catch (refreshError) {
+                    console.error('Session refresh failed:', refreshError);
+                    // Ne pas throw pour éviter de casser l'UI, retourner null
+                    return null;
+                }
+            }
+            // Ne pas throw d'erreur bloquante
+            return null;
+        }
+
+        const data = await response.json();
+        if (data) {
+            localStorage.setItem('userData', JSON.stringify(data));
+        }
+        return data;
+    } catch (error) {
+        console.error('Erreur fetchCurrentUser:', error);
+        return null;
     }
 };
 

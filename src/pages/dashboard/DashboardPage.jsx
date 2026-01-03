@@ -1,13 +1,40 @@
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, Package, Users, DollarSign, AlertCircle, ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { fetchDashboardStats } from '../../services/dashboardService';
 
 export default function DashboardPage() {
-  // Mock data
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const data = await fetchDashboardStats('month');
+        setDashboardData(data);
+      } catch (err) {
+        console.error('Erreur chargement dashboard:', err);
+        setError('Impossible de charger les statistiques');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadStats();
+  }, []);
+
+  // Valeurs par défaut ou issues de l'API
+  const totalShipments = dashboardData?.total_shipments || 0;
+  const pendingShipments = dashboardData?.pending_shipments || 0;
+  const deliveredShipments = dashboardData?.delivered_shipments || 0;
+  const totalRevenue = dashboardData?.total_revenue || 0;
+
+  // Calculs simples pour les pourcentages (mock simulé pour l'instant car l'API ne donne pas encore l'évolution)
   const stats = [
-    { icon: Package, label: 'Colis en transit', value: 24, change: '+12%', color: 'from-blue-50 to-blue-100', iconColor: 'text-blue-600' },
-    { icon: Users, label: 'Utilisateurs actifs', value: 1248, change: '+8%', color: 'from-green-50 to-green-100', iconColor: 'text-green-600' },
-    { icon: DollarSign, label: 'Revenus ce mois', value: '2.4M FCFA', change: '+15%', color: 'from-purple-50 to-purple-100', iconColor: 'text-purple-600' },
-    { icon: AlertCircle, label: 'Problèmes signalés', value: 3, change: '-2%', color: 'from-red-50 to-red-100', iconColor: 'text-red-600' },
+    { icon: Package, label: 'Total Colis', value: totalShipments, change: '+12%', color: 'from-blue-50 to-blue-100', iconColor: 'text-blue-600' },
+    { icon: AlertCircle, label: 'En attente', value: pendingShipments, change: '+5%', color: 'from-yellow-50 to-yellow-100', iconColor: 'text-yellow-600' },
+    { icon: TrendingUp, label: 'Livrés', value: deliveredShipments, change: '+8%', color: 'from-green-50 to-green-100', iconColor: 'text-green-600' },
+    { icon: DollarSign, label: 'Revenus (FCFA)', value: totalRevenue.toLocaleString(), change: '+15%', color: 'from-purple-50 to-purple-100', iconColor: 'text-purple-600' },
   ];
 
   const chartData = [
@@ -20,11 +47,15 @@ export default function DashboardPage() {
   ];
 
   const statusData = [
-    { name: 'Livré', value: 45, color: '#10B981' },
-    { name: 'En transit', value: 30, color: '#3B82F6' },
-    { name: 'En attente', value: 15, color: '#F59E0B' },
-    { name: 'Annulé', value: 10, color: '#EF4444' },
+    { name: 'Livré', value: deliveredShipments, color: '#10B981' },
+    { name: 'En transit', value: totalShipments - pendingShipments - deliveredShipments, color: '#3B82F6' }, // Estimation
+    { name: 'En attente', value: pendingShipments, color: '#F59E0B' },
+    { name: 'Annulé', value: 0, color: '#EF4444' },
   ];
+
+  if (loading) {
+    return <div className="p-8 text-center text-gray-500">Chargement du tableau de bord...</div>;
+  }
 
   const recentShipments = [
     {

@@ -1,5 +1,6 @@
 import { Menu, Bell, User, Search, LogOut } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchCurrentUser, logout } from '../services/authService';
 
 export default function Header({
   sidebarOpen,
@@ -9,14 +10,43 @@ export default function Header({
 }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [userData, setUserData] = useState(null);
 
-  // Récupérer le rôle et l'email de l'utilisateur
-  const userRole = localStorage.getItem('userRole') || 'admin';
-  const userEmail = localStorage.getItem('userEmail') || 'admin@yeskarangue.com';
-  const isAgent = userRole === 'agent';
+  // Récupérer le rôle et l'email de l'utilisateur (fallback localStorage)
+  const localRole = localStorage.getItem('userRole') || 'admin';
+  const localEmail = localStorage.getItem('userEmail') || 'admin@yeskarangue.com';
+  const localName = localStorage.getItem('userName');
 
-  const handleLogout = () => {
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const data = await fetchCurrentUser();
+        setUserData(data);
+      } catch (error) {
+        console.error('Erreur chargement profil:', error);
+      }
+    };
+    loadUser();
+  }, []);
+
+  const displayRole = userData?.role || localRole;
+  const isAgent = displayRole === 'agent';
+  const displayName = userData?.name || localName || (isAgent ? 'Agent' : 'Administrateur');
+  const displayEmail = userData?.email || localEmail;
+
+  // Initiales pour l'avatar
+  const getInitials = (name) => {
+    return name
+      .split(' ')
+      .map((part) => part[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  };
+
+  const handleLogout = async () => {
     if (confirm('Êtes-vous sûr de vouloir vous déconnecter?')) {
+      await logout();
       onLogout();
     }
   };
@@ -112,11 +142,11 @@ export default function Header({
             className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition"
           >
             <div className="w-10 h-10 bg-gradient-to-br from-[#5B9BAD] to-[#4A8999] rounded-full flex items-center justify-center text-white font-semibold text-sm">
-              {isAgent ? 'MG' : 'AD'}
+              {getInitials(displayName)}
             </div>
             <div className="hidden md:block text-left">
               <p className="text-sm font-semibold text-gray-900">
-                {isAgent ? 'Moustapha Gueye' : 'Administrateur'}
+                {displayName}
               </p>
               <p className="text-xs text-gray-500">{isAgent ? 'Agent' : 'Super Admin'}</p>
             </div>
@@ -126,8 +156,8 @@ export default function Header({
           {showUserMenu && (
             <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
               <div className="p-4 border-b border-gray-200">
-                <p className="font-semibold text-gray-900 text-sm truncate" title={userEmail}>
-                  {userEmail}
+                <p className="font-semibold text-gray-900 text-sm truncate" title={displayEmail}>
+                  {displayEmail}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">{isAgent ? 'Agent' : 'Administrateur'}</p>
               </div>
