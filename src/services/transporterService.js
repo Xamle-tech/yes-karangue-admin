@@ -94,3 +94,35 @@ export const fetchTransporterById = async (transporterId) => {
         throw error;
     }
 };
+
+/**
+ * Supprime un transporteur (soft delete)
+ * @param {number} transporterId - L'ID du transporteur à supprimer
+ * @returns {Promise<void>}
+ */
+export const deleteTransporter = async (transporterId) => {
+    try {
+        const url = buildUrl(`${AUTH_ENDPOINTS.ADMIN_TRANSPORTERS}/${transporterId}`);
+
+        const response = await authorizedFetch(url, {
+            method: 'DELETE',
+            headers: getDefaultHeaders(),
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('Transporteur non trouvé');
+            }
+            if (response.status === 409) {
+                throw new Error('Impossible de supprimer ce transporteur car il est en cours d\'utilisation');
+            }
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        // 204 No Content - succès
+        return;
+    } catch (error) {
+        console.error('Erreur lors de la suppression du transporteur:', error);
+        throw error;
+    }
+};
