@@ -2,6 +2,7 @@
  * Service pour gérer les données du dashboard
  */
 import { AUTH_ENDPOINTS, buildUrl, getDefaultHeaders } from '../config/api';
+import { authorizedFetch } from './authService';
 
 /**
  * Récupère les statistiques du dashboard admin
@@ -13,10 +14,9 @@ export const fetchDashboardStats = async (period = 'month') => {
         const url = new URL(buildUrl(AUTH_ENDPOINTS.ADMIN_DASHBOARD));
         url.searchParams.append('period', period);
 
-        const response = await fetch(url.toString(), {
+        const response = await authorizedFetch(url.toString(), {
             method: 'GET',
             headers: getDefaultHeaders(),
-            credentials: 'include',
         });
 
         if (!response.ok) {

@@ -1,36 +1,86 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Upload, FileText, Image as ImageIcon } from 'lucide-react';
 
 export default function TransporterForm({ transporter, onSubmit, onClose }) {
-  const [formData, setFormData] = useState(
-    transporter || {
-      name: '',
-      email: '',
-      phone: '',
-      vehicleType: 'Voiture',
-      vehicleNumber: '',
-    }
-  );
+  const [formData, setFormData] = useState({
+    full_name: '',
+    email: '',
+    phone: '',
+    vehicle_type: 'moto',
+    vehicle_plate: '',
+    insurer_name: '',
+    insurance_expires_at: '',
+    station_id: '0', // Par défaut
+    password: 'password123', // Valeur par défaut requise souvent pour la création user
+  });
+
+  const [files, setFiles] = useState({
+    id_card_front: null,
+    id_card_back: null,
+    vehicle_registration_card: null,
+    vehicle_photos: null,
+  });
 
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.name) newErrors.name = 'Le nom est requis';
+    if (!formData.full_name) newErrors.full_name = 'Le nom complet est requis';
     if (!formData.email) newErrors.email = 'L\'email est requis';
     if (!formData.phone) newErrors.phone = 'Le téléphone est requis';
-    if (!formData.vehicleNumber)
-      newErrors.vehicleNumber = 'Le numéro de véhicule est requis';
+    if (!formData.vehicle_type) newErrors.vehicle_type = 'Le type de véhicule est requis';
+
+    // Validation des fichiers pour la création
+    if (!transporter) {
+      if (!files.id_card_front) newErrors.id_card_front = 'Recto CNI requis';
+      if (!files.id_card_back) newErrors.id_card_back = 'Verso CNI requis';
+      // Autres fichiers peuvent être optionnels selon le cas, mais souvent requis
+    }
+
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validateForm();
-    if (Object.keys(newErrors).length === 0) {
-      onSubmit(formData);
-    } else {
+    if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const data = new FormData();
+      // Champs texte
+      Object.keys(formData).forEach(key => {
+        data.append(key, formData[key]);
+      });
+
+      // Fichiers
+      if (files.id_card_front) data.append('id_card_front', files.id_card_front);
+      if (files.id_card_back) data.append('id_card_back', files.id_card_back);
+      if (files.vehicle_registration_card) data.append('vehicle_registration_card', files.vehicle_registration_card);
+
+      // Photos du véhicule (array)
+      if (files.vehicle_photos) {
+        // Si c'est une FileList (multiple)
+        if (files.vehicle_photos instanceof FileList) {
+          Array.from(files.vehicle_photos).forEach((file) => {
+            data.append('vehicle_photos[]', file);
+          });
+        } else {
+          // Si un seul fichier
+          data.append('vehicle_photos[]', files.vehicle_photos);
+        }
+      }
+
+      await onSubmit(data);
+    } catch (error) {
+      console.error('Erreur soumission:', error);
+      setErrors({ submit: error.message || 'Une erreur est survenue' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -46,123 +96,259 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
     }
   };
 
+  const handleFileChange = (e) => {
+    const { name, files: selectedFiles } = e.target;
+    if (selectedFiles && selectedFiles.length > 0) {
+      if (name === 'vehicle_photos') {
+        setFiles(prev => ({ ...prev, [name]: selectedFiles })); // FileList pour multiple
+      } else {
+        setFiles(prev => ({ ...prev, [name]: selectedFiles[0] }));
+      }
+
+      if (errors[name]) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+      <div className="bg-white rounded-lg max-w-2xl w-full my-8">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-lg z-10">
           <h2 className="text-xl font-bold text-gray-900">
             {transporter ? 'Modifier le transporteur' : 'Ajouter un transporteur'}
           </h2>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-lg transition"
+            type="button"
           >
             <X className="h-5 w-5 text-gray-600" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
-              Nom complet
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Nom du transporteur"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:border-transparent transition"
-            />
-            {errors.name && (
-              <p className="text-red-600 text-sm mt-1">{errors.name}</p>
-            )}
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {errors.submit && (
+            <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+              {errors.submit}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Info Perso */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-900 border-b pb-2">Informations Personnelles</h3>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet *</label>
+                <input
+                  type="text"
+                  name="full_name"
+                  value={formData.full_name}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:outline-none"
+                />
+                {errors.full_name && <p className="text-red-500 text-xs mt-1">{errors.full_name}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:outline-none"
+                />
+                {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone *</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:outline-none"
+                />
+                {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+              </div>
+            </div>
+
+            {/* Info Véhicule */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-900 border-b pb-2">Informations Véhicule</h3>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+                <select
+                  name="vehicle_type"
+                  value={formData.vehicle_type}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:outline-none"
+                >
+                  <option value="moto">Moto</option>
+                  <option value="voiture">Voiture</option>
+                  <option value="camion">Camion</option>
+                  <option value="fourgon">Fourgon</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Immatriculation</label>
+                <input
+                  type="text"
+                  name="vehicle_plate"
+                  value={formData.vehicle_plate}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Assurance</label>
+                <input
+                  type="text"
+                  name="insurer_name"
+                  placeholder="Nom assureur"
+                  value={formData.insurer_name}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Expiration Assurance</label>
+                <input
+                  type="date"
+                  name="insurance_expires_at"
+                  value={formData.insurance_expires_at}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:outline-none"
+                />
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="transport@exemple.com"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:border-transparent transition"
-            />
-            {errors.email && (
-              <p className="text-red-600 text-sm mt-1">{errors.email}</p>
-            )}
-          </div>
+          {/* Documents */}
+          <div className="space-y-4 border-t pt-4">
+            <h3 className="font-semibold text-gray-900">Documents Requis</h3>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
-              Téléphone
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              placeholder="+221 77 123 45 67"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:border-transparent transition"
-            />
-            {errors.phone && (
-              <p className="text-red-600 text-sm mt-1">{errors.phone}</p>
-            )}
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">CNI Recto *</label>
+                <div className="relative border border-gray-300 rounded-lg p-2 bg-gray-50 hover:bg-gray-100 transition">
+                  <input
+                    type="file"
+                    name="id_card_front"
+                    onChange={handleFileChange}
+                    accept="image/*,.pdf"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div className="flex items-center gap-2 pointer-events-none">
+                    <FileText className="h-5 w-5 text-gray-400" />
+                    <span className="text-sm text-gray-600 truncate">
+                      {files.id_card_front ? files.id_card_front.name : 'Choisir un fichier...'}
+                    </span>
+                  </div>
+                </div>
+                {errors.id_card_front && <p className="text-red-500 text-xs mt-1">{errors.id_card_front}</p>}
+              </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
-              Type de véhicule
-            </label>
-            <select
-              name="vehicleType"
-              value={formData.vehicleType}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:border-transparent transition"
-            >
-              <option>Moto</option>
-              <option>Voiture</option>
-              <option>Camion</option>
-              <option>Fourgon</option>
-            </select>
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">CNI Verso *</label>
+                <div className="relative border border-gray-300 rounded-lg p-2 bg-gray-50 hover:bg-gray-100 transition">
+                  <input
+                    type="file"
+                    name="id_card_back"
+                    onChange={handleFileChange}
+                    accept="image/*,.pdf"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div className="flex items-center gap-2 pointer-events-none">
+                    <FileText className="h-5 w-5 text-gray-400" />
+                    <span className="text-sm text-gray-600 truncate">
+                      {files.id_card_back ? files.id_card_back.name : 'Choisir un fichier...'}
+                    </span>
+                  </div>
+                </div>
+                {errors.id_card_back && <p className="text-red-500 text-xs mt-1">{errors.id_card_back}</p>}
+              </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
-              Numéro de véhicule (Immatriculation)
-            </label>
-            <input
-              type="text"
-              name="vehicleNumber"
-              value={formData.vehicleNumber}
-              onChange={handleChange}
-              placeholder="SN-123-ABC"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:border-transparent transition"
-            />
-            {errors.vehicleNumber && (
-              <p className="text-red-600 text-sm mt-1">{errors.vehicleNumber}</p>
-            )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Carte Grise</label>
+                <div className="relative border border-gray-300 rounded-lg p-2 bg-gray-50 hover:bg-gray-100 transition">
+                  <input
+                    type="file"
+                    name="vehicle_registration_card"
+                    onChange={handleFileChange}
+                    accept="image/*,.pdf"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div className="flex items-center gap-2 pointer-events-none">
+                    <FileText className="h-5 w-5 text-gray-400" />
+                    <span className="text-sm text-gray-600 truncate">
+                      {files.vehicle_registration_card ? files.vehicle_registration_card.name : 'Choisir un fichier...'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Photos Véhicule</label>
+                <div className="relative border border-gray-300 rounded-lg p-2 bg-gray-50 hover:bg-gray-100 transition">
+                  <input
+                    type="file"
+                    name="vehicle_photos"
+                    onChange={handleFileChange}
+                    accept="image/*"
+                    multiple
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div className="flex items-center gap-2 pointer-events-none">
+                    <ImageIcon className="h-5 w-5 text-gray-400" />
+                    <span className="text-sm text-gray-600 truncate">
+                      {files.vehicle_photos && files.vehicle_photos.length > 0
+                        ? `${files.vehicle_photos.length} fichier(s)`
+                        : 'Choisir des photos...'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-4 border-t border-gray-100">
             <button
               type="button"
               onClick={onClose}
+              disabled={isSubmitting}
               className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition"
             >
               Annuler
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2.5 bg-[#305669] text-white rounded-lg font-medium hover:bg-[#1F3A4A] transition"
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2.5 bg-[#305669] text-white rounded-lg font-medium hover:bg-[#1F3A4A] transition disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              {transporter ? 'Modifier' : 'Ajouter'}
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Traitement...
+                </>
+              ) : (transporter ? 'Modifier' : 'Ajouter le transporteur')}
             </button>
           </div>
         </form>
@@ -170,4 +356,3 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
     </div>
   );
 }
-

@@ -11,6 +11,7 @@ export default defineConfig({
         target: 'https://yes-karangue-api-production.up.railway.app',
         changeOrigin: true,
         secure: false,
+        cookieDomainRewrite: "localhost",
       },
     },
   },

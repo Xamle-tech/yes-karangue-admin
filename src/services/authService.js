@@ -73,16 +73,25 @@ export const login = async (email, password) => {
  */
 export const refreshToken = async () => {
     try {
+        const token = localStorage.getItem('authToken');
+        const headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        };
+
+        // On retire l'Authorization header pour éviter que le middleware ne bloque le token expiré
+        // Le refresh se base uniquement sur le cookie httpOnly ou le body si implémenté ainsi
+
         const response = await fetch(buildUrl(AUTH_ENDPOINTS.REFRESH_TOKEN), {
             method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
+            headers: headers,
             credentials: 'include', // Important pour envoyer le cookie refresh_token
+            body: JSON.stringify({}), // Corps JSON vide valide
         });
 
         if (!response.ok) {
+            const err = await response.text();
+            console.error('Refresh Failed Details:', response.status, err);
             throw new Error('Échec du rafraîchissement du token');
         }
 
@@ -96,8 +105,10 @@ export const refreshToken = async () => {
         throw new Error('Token non reçu');
     } catch (error) {
         console.error('Erreur lors du rafraîchissement du token:', error);
-        // Ne pas déconnecter automatiquement pour l'instant pour debug
-        // logout();
+        // Si le refresh échoue, on ne déconnecte PAS automatiquement pour le moment pour debug
+        // if (error.message.includes('Échec') || error.message.includes('Token non reçu')) {
+        //      logout(); 
+        // }
         throw error;
     }
 };
@@ -283,4 +294,57 @@ export const logout = async () => {
  */
 export const getAuthToken = () => {
     return localStorage.getItem('authToken');
+};
+
+/**
+ * Wrapper autour de fetch pour gérer automatiquement le rafraîchissement du token
+ * @param {string} url - L'URL à appeler
+ * @param {Object} options - Les options de fetch
+ * @returns {Promise<Response>} La réponse du fetch
+ */
+export const authorizedFetch = async (url, options = {}) => {
+    // S'assurer que les headers existent et incluent l'auth
+    const headers = options.headers || {};
+    const token = getAuthToken();
+    if (token && !headers['Authorization']) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // Configurer credentials par défaut si non spécifié
+    if (options.credentials === undefined) {
+        options.credentials = 'include';
+    }
+
+    const config = { ...options, headers };
+
+    try {
+        let response = await fetch(url, config);
+
+        // Si 401, tenter le refresh
+        if (response.status === 401) {
+            console.warn('401 détecté, tentative de rafraîchissement du token...');
+            try {
+                const newToken = await refreshToken();
+
+                // Mettre à jour le header avec le nouveau token
+                if (config.headers instanceof Headers) {
+                    config.headers.set('Authorization', `Bearer ${newToken}`);
+                } else {
+                    config.headers['Authorization'] = `Bearer ${newToken}`;
+                }
+
+                // Réessayer la requête
+                console.log('Réessai de la requête avec le nouveau token...');
+                response = await fetch(url, config);
+            } catch (refreshError) {
+                console.error('Échec du rafraîchissement, session expirée.', refreshError);
+                // Optionnel : logout() ici si on veut forcer la sortie
+                throw refreshError;
+            }
+        }
+
+        return response;
+    } catch (error) {
+        throw error;
+    }
 };

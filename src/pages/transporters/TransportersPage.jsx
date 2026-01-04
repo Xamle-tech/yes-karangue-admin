@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, Eye, LayoutGrid, List as ListIcon, ChevronDown, Truck, Bike, Car, Star } from 'lucide-react';
 import TransporterForm from '../../components/forms/TransporterForm';
-import { fetchTransporters } from '../../services/transporterService';
+import { fetchTransporters, createTransporter } from '../../services/transporterService';
 
 export default function TransportersPage() {
   const [transporters, setTransporters] = useState([]);
@@ -11,15 +11,38 @@ export default function TransportersPage() {
   const [editingTransporter, setEditingTransporter] = useState(null);
   const [viewMode, setViewMode] = useState('list');
 
+  const loadTransporters = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchTransporters();
+      setTransporters(Array.isArray(data) ? data : (data.data || []));
+    } catch (error) {
+      console.error("Erreur chargement:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTransporters();
+  }, []);
+
   const filteredTransporters = transporters.filter(
     (transporter) =>
       transporter.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transporter.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddTransporter = (formData) => {
-    // simplified
-    setShowForm(false);
+  const handleAddTransporter = async (formData) => {
+    try {
+      await createTransporter(formData);
+      setShowForm(false);
+      // Rafraîchir la liste
+      loadTransporters();
+    } catch (error) {
+      console.error("Erreur création transporteur:", error);
+      alert(error.message || "Erreur lors de la création du transporteur");
+    }
   };
 
   const getVehicleIcon = (type) => {

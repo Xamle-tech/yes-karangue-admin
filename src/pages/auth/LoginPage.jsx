@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import logo from '../../icons/logo.png';
+import { login, saveAuthData } from '../../services/authService';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -18,30 +19,29 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // TODO: Appel API sécurisé au backend
-      // Simulation login pour le moment - ACCEPTE N'IMPORTE QUEL EMAIL/MDP
-      if (email && password) {
-        // Déterminer le rôle basé sur l'email (pour démo)
-        let userRole = 'admin';
-        let redirectPath = '/dashboard';
-        
-        if (email.includes('agent') || email.toLowerCase().startsWith('agent')) {
-          userRole = 'agent';
-          redirectPath = '/agent';
-        }
-        
-        // Stockage sécurisé du token (sera remplacé par une vraie auth)
-        localStorage.setItem('authToken', 'token_' + Date.now());
-        localStorage.setItem('userRole', userRole);
-        localStorage.setItem('userEmail', email);
-        
-        // Redirection immédiate avec rechargement
-        window.location.href = redirectPath;
-      } else {
+      if (!email || !password) {
         setError('Veuillez remplir tous les champs');
+        setLoading(false);
+        return;
       }
+
+      // Appel API réel pour la connexion
+      const data = await login(email, password);
+
+      // Sauvegarder les données de session
+      saveAuthData(data);
+
+      // Déterminer la redirection
+      const userRole = data.role;
+      if (userRole === 'agent') {
+        window.location.href = '/agent';
+      } else {
+        window.location.href = '/dashboard';
+      }
+
     } catch (err) {
-      setError('Erreur de connexion. Veuillez réessayer.');
+      console.error("Login error:", err);
+      setError(err.message || 'Erreur de connexion. Veuillez réessayer.');
     } finally {
       setLoading(false);
     }
@@ -60,9 +60,9 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <img 
-            src={logo} 
-            alt="Yes Karangue" 
+          <img
+            src={logo}
+            alt="Yes Karangue"
             className="h-20 w-auto object-contain"
           />
         </div>
