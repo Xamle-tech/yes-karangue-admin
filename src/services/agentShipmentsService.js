@@ -1,0 +1,136 @@
+/**
+ * Service pour gérer les colis (shipments) - Vue Agent
+ */
+import { buildUrl, getDefaultHeaders } from '../config/api';
+import { authorizedFetch } from './authService';
+
+/**
+ * Récupère la liste des colis avec filtres optionnels
+ * @param {Object} params - Paramètres de filtrage
+ * @param {string} params.status - Filtrer par statut (DEPOT, etc.)
+ * @param {string} params.tracking_number - Rechercher par numéro de suivi (ex: YK-2025-00001)
+ * @returns {Promise<Array>} Liste des colis
+ */
+export const fetchAgentShipments = async (params = {}) => {
+    try {
+        // Construire les query params
+        const queryParams = new URLSearchParams();
+        Object.keys(params).forEach(key => {
+            if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
+                queryParams.append(key, params[key]);
+            }
+        });
+
+        const queryString = queryParams.toString();
+        const url = buildUrl('/api/v1/agent/shipments' + (queryString ? `?${queryString}` : ''));
+
+        const response = await authorizedFetch(url, {
+            method: 'GET',
+            headers: getDefaultHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Erreur lors de la récupération des colis:', error);
+        throw error;
+    }
+};
+
+/**
+ * Récupère les détails d'un colis par son ID
+ * @param {number|string} shipmentId - L'ID du colis
+ * @returns {Promise<Object>} Les détails du colis
+ */
+export const fetchAgentShipmentById = async (shipmentId) => {
+    try {
+        const url = buildUrl(`/api/v1/agent/shipments/${shipmentId}`);
+
+        const response = await authorizedFetch(url, {
+            method: 'GET',
+            headers: getDefaultHeaders(),
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('Colis non trouvé');
+            }
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Erreur lors de la récupération du colis:', error);
+        throw error;
+    }
+};
+
+/**
+ * Crée un nouveau colis avec informations expéditeur et destinataire
+ * @param {Object} shipmentData - Les données du colis
+ * @param {string} shipmentData.sender_full_name - Nom complet de l'expéditeur (requis)
+ * @param {string} shipmentData.sender_phone - Téléphone de l'expéditeur (requis)
+ * @param {string} shipmentData.sender_address - Adresse de l'expéditeur (requis)
+ * @param {string} shipmentData.sender_id_type - Type de pièce d'identité
+ * @param {string} shipmentData.sender_id_number - Numéro de pièce d'identité
+ * @param {string} shipmentData.recipient_full_name - Nom complet du destinataire (requis)
+ * @param {string} shipmentData.recipient_phone - Téléphone du destinataire (requis)
+ * @param {string} shipmentData.recipient_address - Adresse du destinataire (requis)
+ * @param {string} shipmentData.content_description - Description du contenu (requis)
+ * @param {number} shipmentData.weight_kg - Poids en kg (requis)
+ * @param {number} shipmentData.stamp_box_fdfs - Cachet boîte fdfs
+ * @param {number} shipmentData.transporter_id - ID du transporteur
+ * @param {File} shipmentData.package_photo - Photo du colis (requis, binary)
+ * @param {File} shipmentData.sender_id_front - Photo recto pièce d'identité (binary)
+ * @param {File} shipmentData.sender_id_back - Photo verso pièce d'identité (binary)
+ * @returns {Promise<Object>} Le colis créé avec tracking_number et status
+ */
+export const createAgentShipment = async (shipmentData) => {
+    try {
+        // Créer un FormData pour envoyer des fichiers (multipart/form-data)
+        const formData = new FormData();
+
+        // Ajouter tous les champs texte
+        Object.keys(shipmentData).forEach(key => {
+            if (shipmentData[key] !== undefined && shipmentData[key] !== null && shipmentData[key] !== '') {
+                // Si c'est un File, l'ajouter tel quel
+                if (shipmentData[key] instanceof File) {
+                    formData.append(key, shipmentData[key]);
+                } else {
+                    formData.append(key, shipmentData[key]);
+                }
+            }
+        });
+
+        const url = buildUrl('/api/v1/agent/shipments');
+
+        // Pour FormData, ne pas définir Content-Type manuellement (le navigateur le fait)
+        const headers = {};
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await authorizedFetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Erreur lors de la création du colis:', error);
+        throw error;
+    }
+};
