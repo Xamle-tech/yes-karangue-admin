@@ -3,7 +3,7 @@ import { Plus, Search, Edit2, Trash2, MapPin, Users, Package, Eye, LayoutGrid, L
 import PointForm from '../../components/forms/PointForm';
 import PointDetails from '../../components/modals/PointDetails';
 import Toast from '../../components/Toast';
-import { fetchRelayPoints, deleteRelayPoint, createRelayPoint } from '../../services/relayPointService';
+import { fetchRelayPoints, deleteRelayPoint, createRelayPoint, updateRelayPoint } from '../../services/relayPointService';
 
 export default function PointsPage() {
   const [points, setPoints] = useState([]);
@@ -51,13 +51,53 @@ export default function PointsPage() {
     shipments: points.reduce((acc, curr) => acc + (curr.shipmentsProcessed || curr.shipments_count || 0), 0),
   };
 
-  const handleAddPoint = async (formData) => {
+  const handleAddOrUpdatePoint = async (formData) => {
     try {
-      await createRelayPoint(formData);
+      if (editingPoint) {
+        // Mise à jour d'un point existant
+        await updateRelayPoint(editingPoint.id, formData);
+        setToast({
+          message: `${formData.name} a été modifié avec succès`,
+          type: 'success'
+        });
+      } else {
+        // Création d'un nouveau point
+        await createRelayPoint(formData);
+        setToast({
+          message: `${formData.name} a été créé avec succès`,
+          type: 'success'
+        });
+      }
+
       setShowForm(false);
+      setEditingPoint(null);
       await loadRelayPoints();
     } catch (error) {
-      throw error; // Laisser le formulaire gérer l'erreur
+      console.error('Erreur lors de la sauvegarde:', error);
+
+      // Gestion des erreurs avec toast
+      let errorMessage = 'Une erreur est survenue';
+      let toastType = 'error';
+
+      if (error.message.includes('non trouvé') || error.message.includes('404')) {
+        errorMessage = 'Point relais introuvable';
+      } else if (error.message.includes('cours d\'utilisation') || error.message.includes('409')) {
+        errorMessage = 'Impossible de modifier ce point relais car il est en cours d\'utilisation';
+        toastType = 'warning';
+      } else if (error.message.includes('validation') || error.message.includes('422')) {
+        errorMessage = error.message;
+        toastType = 'warning';
+      } else {
+        errorMessage = error.message;
+      }
+
+      setToast({
+        message: errorMessage,
+        type: toastType
+      });
+
+      // Re-lancer l'erreur pour que le formulaire puisse aussi la gérer
+      throw error;
     }
   };
 
@@ -128,8 +168,11 @@ export default function PointsPage() {
       {showForm && (
         <PointForm
           point={editingPoint}
-          onSubmit={handleAddPoint}
-          onClose={() => setShowForm(false)}
+          onSubmit={handleAddOrUpdatePoint}
+          onClose={() => {
+            setShowForm(false);
+            setEditingPoint(null);
+          }}
         />
       )}
 
@@ -294,7 +337,14 @@ export default function PointsPage() {
                           <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition">
                             <Eye className="h-4 w-4" />
                           </button>
-                          <button className="p-2 hover:bg-gray-100 rounded-lg text-[#E8B44D] transition">
+                          <button
+                            onClick={() => {
+                              setEditingPoint(point);
+                              setShowForm(true);
+                            }}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-[#E8B44D] transition"
+                            title="Modifier"
+                          >
                             <Edit2 className="h-4 w-4" />
                           </button>
                           <button

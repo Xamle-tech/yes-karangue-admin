@@ -107,7 +107,7 @@ export const createRelayPoint = async (relayPointData) => {
 export const updateRelayPoint = async (relayPointId, relayPointData) => {
     try {
         const response = await authorizedFetch(buildUrl(`/api/v1/admin/relay-points/${relayPointId}`), {
-            method: 'PUT',
+            method: 'PATCH',
             headers: getDefaultHeaders(),
             body: JSON.stringify(relayPointData),
         });
@@ -115,6 +115,15 @@ export const updateRelayPoint = async (relayPointId, relayPointData) => {
         if (!response.ok) {
             if (response.status === 404) {
                 throw new Error('Point de retrait non trouvé');
+            }
+            if (response.status === 409) {
+                throw new Error('Ressource en cours d\'utilisation');
+            }
+            if (response.status === 422) {
+                const errorData = await response.json().catch(() => ({}));
+                const validationErrors = errorData.details || {};
+                const firstError = Object.values(validationErrors)[0];
+                throw new Error(firstError || errorData.message || 'Erreur de validation');
             }
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);

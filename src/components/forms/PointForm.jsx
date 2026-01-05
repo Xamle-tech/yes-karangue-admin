@@ -6,8 +6,9 @@ export default function PointForm({ point, onSubmit, onClose }) {
         name: point?.name || '',
         address: point?.address || '',
         type: point?.type || 'DEPOT_RETRAIT',
-        north_phone: point?.north_phone || point?.phone || '',
+        main_phone: point?.main_phone || point?.phone || '',
         manager_user_id: point?.manager_user_id || '',
+        is_active: point?.is_active !== undefined ? point.is_active : true,
     });
 
     const [errors, setErrors] = useState({});
@@ -24,7 +25,7 @@ export default function PointForm({ point, onSubmit, onClose }) {
         if (!formData.name) newErrors.name = 'Le nom est requis';
         if (!formData.address) newErrors.address = 'L\'adresse est requise';
         if (!formData.type) newErrors.type = 'Le type est requis';
-        if (!formData.north_phone) newErrors.north_phone = 'Le téléphone est requis';
+        if (!formData.main_phone) newErrors.main_phone = 'Le téléphone est requis';
         if (!formData.manager_user_id) newErrors.manager_user_id = 'L\'ID du gestionnaire est requis';
 
         // Validation format manager_user_id (usr_XX)
@@ -150,13 +151,13 @@ export default function PointForm({ point, onSubmit, onClose }) {
                         </label>
                         <input
                             type="tel"
-                            name="north_phone"
-                            value={formData.north_phone}
+                            name="main_phone"
+                            value={formData.main_phone}
                             onChange={handleChange}
                             placeholder="+221771234567"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E8B44D] focus:border-[#E8B44D] focus:outline-none"
                         />
-                        {errors.north_phone && <p className="text-red-500 text-xs mt-1">{errors.north_phone}</p>}
+                        {errors.main_phone && <p className="text-red-500 text-xs mt-1">{errors.main_phone}</p>}
                     </div>
 
                     {/* ID du gestionnaire */}
@@ -176,6 +177,21 @@ export default function PointForm({ point, onSubmit, onClose }) {
                         {errors.manager_user_id && (
                             <p className="text-red-500 text-xs mt-1">{errors.manager_user_id}</p>
                         )}
+                    </div>
+
+                    {/* Statut actif */}
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            id="is_active"
+                            name="is_active"
+                            checked={formData.is_active}
+                            onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
+                            className="w-4 h-4 text-[#E8B44D] bg-gray-100 border-gray-300 rounded focus:ring-[#E8B44D] focus:ring-2"
+                        />
+                        <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
+                            Point relais actif
+                        </label>
                     </div>
 
                     {/* Actions */}
