@@ -1,78 +1,71 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Search, Eye, Edit2, Trash2, MapPin, ChevronDown, LayoutGrid, List as ListIcon } from 'lucide-react';
 import UserForm from '../../components/forms/UserForm';
+import Toast from '../../components/Toast';
+import { fetchUsers, deleteUser } from '../../services/userService';
 
 export default function UsersPage() {
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: 'Mama Diallo',
-      initials: 'MD',
-      email: 'mama@example.com',
-      phone: '+221 77 123 45 67',
-      role: 'Client',
-      roleColor: 'bg-blue-100 text-blue-700',
-      pointName: 'Point Dakar Centre',
-      location: 'Dakar',
-      credits: 15000,
-      status: 'Actif',
-      statusColor: 'bg-green-100 text-green-700',
-      online: true,
-      avatarColor: 'bg-emerald-500',
-      joinDate: '2025-01-01',
-    },
-    {
-      id: 2,
-      name: 'Mouhamadou Ba',
-      initials: 'MB',
-      email: 'mouhamadou@example.com',
-      phone: '+221 78 234 56 78',
-      role: 'Gestionnaire Point',
-      roleColor: 'bg-green-100 text-green-700',
-      pointName: 'Point Thiès Est',
-      location: 'Thiès',
-      credits: 0,
-      status: 'Actif',
-      statusColor: 'bg-green-100 text-green-700',
-      online: true,
-      avatarColor: 'bg-teal-500',
-      joinDate: '2024-12-20',
-    },
-    {
-      id: 3,
-      name: 'Fatoumata Sow',
-      initials: 'FS',
-      email: 'fatoumata@example.com',
-      phone: '+221 76 345 67 89',
-      role: 'Administrateur',
-      roleColor: 'bg-purple-100 text-purple-700',
-      pointName: null,
-      location: null,
-      credits: 0,
-      status: 'Inactif',
-      statusColor: 'bg-red-100 text-red-700',
-      online: false,
-      avatarColor: 'bg-orange-500',
-      joinDate: '2024-11-15',
-    },
-  ]);
-
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [filterRole, setFilterRole] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterRole, setFilterRole] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterRelayPoint, setFilterRelayPoint] = useState('');
   const [viewMode, setViewMode] = useState('list');
+  const [deletingId, setDeletingId] = useState(null);
+  const [toast, setToast] = useState(null);
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.phone.includes(searchTerm);
-    const matchesRole = filterRole === 'all' || user.role === filterRole;
-    const matchesStatus = filterStatus === 'all' || user.status === filterStatus;
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
+
+  // Charger les utilisateurs depuis l'API
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const params = {
+        limit: itemsPerPage,
+        offset: (currentPage - 1) * itemsPerPage,
+      };
+
+      if (searchTerm) params.q = searchTerm;
+      if (filterRole) params.role = filterRole;
+      if (filterStatus) params.status = filterStatus;
+      if (filterRelayPoint) params.relay_point_id = filterRelayPoint;
+
+      const data = await fetchUsers(params);
+
+      // Gérer différents formats de réponse
+      if (Array.isArray(data)) {
+        setUsers(data);
+        setTotalItems(data.length);
+      } else if (data.data) {
+        setUsers(data.data);
+        setTotalItems(data.total || data.data.length);
+      } else {
+        setUsers([]);
+        setTotalItems(0);
+      }
+    } catch (error) {
+      console.error('Erreur chargement:', error);
+      setToast({
+        message: error.message,
+        type: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Charger au montage et quand les filtres changent
+  useEffect(() => {
+    loadUsers();
+  }, [searchTerm, filterRole, filterStatus, filterRelayPoint, currentPage, itemsPerPage]);
+
+  const filteredUsers = users;
 
   const handleAddUser = (formData) => {
     if (editingUser) {
@@ -229,17 +222,15 @@ export default function UsersPage() {
             <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2.5 transition ${
-                  viewMode === 'grid' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
-                }`}
+                className={`p-2.5 transition ${viewMode === 'grid' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
               >
                 <LayoutGrid className="h-5 w-5" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2.5 transition ${
-                  viewMode === 'list' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
-                }`}
+                className={`p-2.5 transition ${viewMode === 'list' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
               >
                 <ListIcon className="h-5 w-5" />
               </button>
@@ -276,8 +267,8 @@ export default function UsersPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredUsers.map((user, index) => (
-                <tr 
-                  key={user.id} 
+                <tr
+                  key={user.id}
                   className={`hover:bg-gray-50 transition ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
                 >
                   {/* Nom avec avatar et initiales */}
