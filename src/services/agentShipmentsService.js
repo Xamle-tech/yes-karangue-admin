@@ -233,3 +233,93 @@ export const receiveAgentShipment = async (shipmentId, receiveData) => {
         throw error;
     }
 };
+
+/**
+ * Récupère l'historique complet des événements de suivi d'un colis
+ * @param {number|string} shipmentId - L'ID du colis
+ * @returns {Promise<Array>} Liste des événements de suivi
+ */
+export const fetchAgentShipmentEvents = async (shipmentId) => {
+    try {
+        const url = buildUrl(`/api/v1/agent/shipments/${shipmentId}/events`);
+
+        const response = await authorizedFetch(url, {
+            method: 'GET',
+            headers: getDefaultHeaders(),
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('Colis non trouvé');
+            }
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Erreur lors de la récupération des événements:', error);
+        throw error;
+    }
+};
+
+/**
+ * Renvoie le code de retrait par SMS au destinataire via Africamobile
+ * @param {number|string} shipmentId - L'ID du colis
+ * @returns {Promise<Object>} Confirmation d'envoi
+ */
+export const resendPickupCode = async (shipmentId) => {
+    try {
+        const url = buildUrl(`/api/v1/agent/shipments/${shipmentId}/pickup-code/resend`);
+
+        const response = await authorizedFetch(url, {
+            method: 'POST',
+            headers: getDefaultHeaders(),
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('Colis non trouvé');
+            }
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Erreur lors du renvoi du code:', error);
+        throw error;
+    }
+};
+
+/**
+ * Génère et télécharge la feuille de route (waybill) en format PDF
+ * @param {number|string} shipmentId - L'ID du colis
+ * @returns {Promise<Blob>} Fichier PDF
+ */
+export const downloadWaybillPDF = async (shipmentId) => {
+    try {
+        const url = buildUrl(`/api/v1/agent/shipments/${shipmentId}/waybill.pdf`);
+
+        const response = await authorizedFetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            },
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('Colis non trouvé');
+            }
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        // Retourner le blob pour téléchargement
+        const blob = await response.blob();
+        return blob;
+    } catch (error) {
+        console.error('Erreur lors du téléchargement du PDF:', error);
+        throw error;
+    }
+};
