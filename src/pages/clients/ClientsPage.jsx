@@ -1,62 +1,86 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, Eye, User, Smartphone, LayoutGrid, List as ListIcon } from 'lucide-react';
 import ClientForm from '../../components/forms/ClientForm';
 import ClientDetails from '../../components/modals/ClientDetails';
+import Toast from '../../components/Toast';
+import { fetchClients, fetchClientById } from '../../services/clientsService';
 
 export default function ClientsPage() {
-  const [clients, setClients] = useState([
-    {
-      id: 1,
-      name: 'Ahmed Diallo',
-      initials: 'AD',
-      role: 'Exp. & Dest.',
-      email: 'contact@abc-transport.com',
-      phone: '+221 77 123 45 67',
-      hasApp: true,
-      lastActivity: '06/12/2025',
-      status: 'Actif',
-      activityHistory: [],
-    },
-    {
-      id: 2,
-      name: 'Fatou Sall',
-      initials: 'FS',
-      role: 'Destinataire',
-      email: 'info@logistique-xyz.com',
-      phone: '+221 78 987 65 43',
-      hasApp: false,
-      lastActivity: '05/12/2025',
-      status: 'Actif',
-      activityHistory: [],
-    },
-    {
-      id: 3,
-      name: 'Boutique Électronique Dakar',
-      initials: 'BD',
-      role: 'Expéditeur',
-      email: 'support@express-senegal.com',
-      phone: '+221 76 555 44 33',
-      hasApp: true,
-      lastActivity: '05/12/2025',
-      status: 'Actif',
-      activityHistory: [],
-    },
-  ]);
-
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [editingClient, setEditingClient] = useState(null);
   const [viewMode, setViewMode] = useState('list');
+  const [toast, setToast] = useState(null);
+  const [viewingClientId, setViewingClientId] = useState(null);
 
-  const filteredClients = clients.filter((client) => {
-    return (
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.phone.includes(searchTerm)
-    );
-  });
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
+
+  // Charger les clients depuis l'API
+  const loadClients = async () => {
+    try {
+      setLoading(true);
+      const params = {
+        limit: itemsPerPage,
+        offset: (currentPage - 1) * itemsPerPage,
+      };
+
+      if (searchTerm) params.q = searchTerm;
+
+      const data = await fetchClients(params);
+
+      // Gérer différents formats de réponse
+      if (Array.isArray(data)) {
+        setClients(data);
+        setTotalItems(data.length);
+      } else if (data.data) {
+        setClients(data.data);
+        setTotalItems(data.total || data.data.length);
+      } else {
+        setClients([]);
+        setTotalItems(0);
+      }
+    } catch (error) {
+      console.error('Erreur chargement:', error);
+      setToast({
+        message: error.message,
+        type: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Voir les détails d'un client
+  const handleViewClient = async (clientId) => {
+    try {
+      setViewingClientId(clientId);
+      const client = await fetchClientById(clientId);
+      setSelectedClient(client);
+      setShowDetails(true);
+    } catch (error) {
+      setToast({
+        message: error.message,
+        type: 'error'
+      });
+    } finally {
+      setViewingClientId(null);
+    }
+  };
+
+  // Charger au montage et quand les filtres changent
+  useEffect(() => {
+    loadClients();
+  }, [searchTerm, currentPage]);
+
+  // Clients déjà filtrés par l'API
+  const filteredClients = clients;
 
   const handleAddClient = (formData) => {
     // ... logic mostly same, simplified for UI demo
@@ -70,11 +94,13 @@ export default function ClientsPage() {
   };
 
   const stats = {
-    total: clients.length,
+    total: totalItems,
     withApp: clients.filter((c) => c.hasApp).length,
     withoutApp: clients.filter((c) => !c.hasApp).length,
     totalShipments: 72, // Hardcoded for demo match or calculated
   };
+
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   return (
     <div className="space-y-6">
@@ -220,108 +246,144 @@ export default function ClientsPage() {
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Nom</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Téléphone</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Email</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">App</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Activité</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Statut</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredClients.map((client, index) => (
-                <tr
-                  key={client.id}
-                  className={`hover:bg-gray-50 transition ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
-                >
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 text-gray-600 font-bold text-sm relative">
-                        {client.initials}
-                        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900 text-sm">{client.name}</p>
-                        <p className="text-xs text-gray-500">{client.role}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{client.phone}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{client.email}</td>
-                  <td className="px-6 py-4">
-                    {client.hasApp ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-50 text-green-700 text-xs font-medium border border-green-100">
-                        <Smartphone className="h-3 w-3" />
-                        Oui
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-red-50 text-red-700 text-xs font-medium border border-red-100">
-                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                        </svg>
-                        Non
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{client.lastActivity}</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      {client.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-end gap-1">
-                      <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button className="p-2 hover:bg-gray-100 rounded-lg text-[#E8B44D] transition">
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button className="p-2 hover:bg-gray-100 rounded-lg text-red-500 transition">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
+        {loading ? (
+          <div className="p-12 text-center">
+            <div className="inline-block animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+            <p className="mt-4 text-gray-600">Chargement...</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Nom</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Téléphone</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Email</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">App</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Activité</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Statut</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredClients.length > 0 ? filteredClients.map((client, index) => (
+                  <tr
+                    key={client.id}
+                    className={`hover:bg-gray-50 transition ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 text-gray-600 font-bold text-sm relative">
+                          {client.full_name?.charAt(0) || 'C'}
+                          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900 text-sm">{client.full_name || client.name || 'Sans nom'}</p>
+                          <p className="text-xs text-gray-500">{client.role || 'Client'}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{client.phone || 'N/A'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{client.email || 'N/A'}</td>
+                    <td className="px-6 py-4">
+                      {client.hasApp ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-50 text-green-700 text-xs font-medium border border-green-100">
+                          <Smartphone className="h-3 w-3" />
+                          Oui
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-red-50 text-red-700 text-xs font-medium border border-red-100">
+                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                          </svg>
+                          Non
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {client.created_at ? new Date(client.created_at).toLocaleDateString('fr-FR') : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${client.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                        {client.status === 'active' ? 'Actif' : client.status || 'Inactif'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => handleViewClient(client.id)}
+                          disabled={viewingClientId === client.id}
+                          className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition disabled:opacity-50"
+                        >
+                          {viewingClientId === client.id ? (
+                            <div className="animate-spin h-4 w-4 border-2 border-gray-500 rounded-full border-t-transparent"></div>
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                        <button className="p-2 hover:bg-gray-100 rounded-lg text-[#E8B44D] transition">
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button className="p-2 hover:bg-gray-100 rounded-lg text-red-500 transition">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                      Aucun client trouvé
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Pagination */}
-        <div className="border-t border-gray-200 px-6 py-3">
-          <div className="flex items-center justify-between text-sm text-gray-600">
-            <div>
-              <span className="font-medium">éléments par page: </span>
-              <select className="ml-2 border border-gray-300 rounded px-2 py-1 text-sm bg-white">
-                <option>10</option>
-                <option>25</option>
-                <option>50</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-4">
-              <span>1 - 1 sur 3</span>
-              <div className="flex gap-1">
-                <button className="p-1.5 hover:bg-gray-100 rounded transition disabled:opacity-50">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
+        {!loading && (
+          <div className="border-t border-gray-200 px-6 py-3">
+            <div className="flex items-center justify-between text-sm text-gray-600">
+              <div>
+                <span>
+                  Affichage {Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} - {Math.min(currentPage * itemsPerPage, totalItems)} sur {totalItems}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Précédent
                 </button>
-                <button className="p-1.5 hover:bg-gray-100 rounded transition">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                <span className="px-3">
+                  Page {currentPage} sur {totalPages || 1}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Suivant
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* Toast Notifications */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }
