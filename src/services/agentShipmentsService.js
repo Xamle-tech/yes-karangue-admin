@@ -134,3 +134,102 @@ export const createAgentShipment = async (shipmentData) => {
         throw error;
     }
 };
+
+/**
+ * Recherche un colis par son numéro de suivi
+ * @param {string} trackingNumber - Numéro de suivi (ex: YK-2025-00001)
+ * @returns {Promise<Object>} Les détails du colis trouvé
+ */
+export const lookupAgentShipment = async (trackingNumber) => {
+    try {
+        const url = buildUrl(`/api/v1/agent/shipments/lookup?q=${encodeURIComponent(trackingNumber)}`);
+
+        const response = await authorizedFetch(url, {
+            method: 'GET',
+            headers: getDefaultHeaders(),
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('Colis introuvable');
+            }
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Erreur lors de la recherche du colis:', error);
+        throw error;
+    }
+};
+
+/**
+ * Met à jour le statut d'un colis
+ * @param {number|string} shipmentId - L'ID du colis
+ * @param {Object} statusData - Les données de mise à jour
+ * @param {string} statusData.new_status - Nouveau statut (ex: "CHILD_EN_CHARGE", "EN_CHARGE", "EN_COURS_DE_LIVRAISON")
+ * @param {string} statusData.event_time - Date/heure de l'événement (ISO 8601, ex: "2026-01-05T17:28:46.793Z")
+ * @returns {Promise<Object>} Confirmation de mise à jour
+ */
+export const updateAgentShipmentStatus = async (shipmentId, statusData) => {
+    try {
+        const url = buildUrl(`/api/v1/agent/shipments/${shipmentId}/status`);
+
+        const response = await authorizedFetch(url, {
+            method: 'POST',
+            headers: getDefaultHeaders(),
+            body: JSON.stringify(statusData),
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('Colis non trouvé');
+            }
+            if (response.status === 422) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Erreur de validation');
+            }
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Erreur lors de la mise à jour du statut:', error);
+        throw error;
+    }
+};
+
+/**
+ * Marque un colis comme reçu au point de destination
+ * @param {number|string} shipmentId - L'ID du colis
+ * @param {Object} receiveData - Les données de réception
+ * @param {number} receiveData.destination_point_id - ID du point de destination
+ * @param {string} receiveData.received_at - Date/heure de réception (ISO 8601, ex: "2026-01-05T17:29:38.694Z")
+ * @returns {Promise<Object>} Confirmation de réception
+ */
+export const receiveAgentShipment = async (shipmentId, receiveData) => {
+    try {
+        const url = buildUrl(`/api/v1/agent/shipments/${shipmentId}/receive`);
+
+        const response = await authorizedFetch(url, {
+            method: 'POST',
+            headers: getDefaultHeaders(),
+            body: JSON.stringify(receiveData),
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('Colis non trouvé');
+            }
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Erreur lors de la réception du colis:', error);
+        throw error;
+    }
+};
