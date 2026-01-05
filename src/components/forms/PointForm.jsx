@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { fetchRelayPointTypes } from '../../services/relayPointService';
 
 export default function PointForm({ point, onSubmit, onClose }) {
     const [formData, setFormData] = useState({
@@ -13,12 +14,30 @@ export default function PointForm({ point, onSubmit, onClose }) {
 
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const typeOptions = [
+    const [typeOptions, setTypeOptions] = useState([
         { value: 'DEPOT', label: 'Dépôt' },
         { value: 'RETRAIT', label: 'Retrait' },
         { value: 'DEPOT_RETRAIT', label: 'Dépôt et Retrait' },
-    ];
+    ]);
+    const [loadingTypes, setLoadingTypes] = useState(false);
+
+    // Charger les types de points relais depuis l'API
+    useEffect(() => {
+        const loadTypes = async () => {
+            try {
+                setLoadingTypes(true);
+                const types = await fetchRelayPointTypes();
+                setTypeOptions(types);
+            } catch (error) {
+                console.error('Erreur lors du chargement des types:', error);
+                // Garder les valeurs par défaut en cas d'erreur
+            } finally {
+                setLoadingTypes(false);
+            }
+        };
+
+        loadTypes();
+    }, []);
 
     const validateForm = () => {
         const newErrors = {};
@@ -133,13 +152,18 @@ export default function PointForm({ point, onSubmit, onClose }) {
                             name="type"
                             value={formData.type}
                             onChange={handleChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E8B44D] focus:border-[#E8B44D] focus:outline-none"
+                            disabled={loadingTypes}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E8B44D] focus:border-[#E8B44D] focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                         >
-                            {typeOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
+                            {loadingTypes ? (
+                                <option>Chargement...</option>
+                            ) : (
+                                typeOptions.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))
+                            )}
                         </select>
                         {errors.type && <p className="text-red-500 text-xs mt-1">{errors.type}</p>}
                     </div>

@@ -51,6 +51,7 @@ Bienvenue dans la documentation du projet **yes-karangue-admin** !
 | **Détails** | GET | `/api/v1/admin/relay-points/{id}` | [API](./API-POINTS-RELAIS.md#3--détails-dun-point-relais) |
 | **Modifier** | PATCH | `/api/v1/admin/relay-points/{id}` | [Guide](./GUIDE-UPDATE-POINT-RELAIS.md) |
 | **Supprimer** | DELETE | `/api/v1/admin/relay-points/{id}` | [Guide](./GUIDE-SUPPRESSION-POINT-RELAIS.md) |
+| **Types** | GET | `/api/v1/admin/relay-point-types` | [API](./relay-point-types-endpoint.md) |
 
 ### Utilisation Rapide
 
@@ -59,6 +60,7 @@ import {
   createRelayPoint, 
   fetchRelayPoints, 
   fetchRelayPointById,
+  fetchRelayPointTypes,
   updateRelayPoint, 
   deleteRelayPoint 
 } from '../services/relayPointService';
@@ -71,6 +73,9 @@ const points = await fetchRelayPoints({ q: 'dakar' });
 
 // Détails
 const point = await fetchRelayPointById(123);
+
+// Types disponibles
+const types = await fetchRelayPointTypes();
 
 // Modifier
 await updateRelayPoint(123, { name: "Nouveau Nom", ... });

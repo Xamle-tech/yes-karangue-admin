@@ -150,6 +150,44 @@ await deleteRelayPoint(123);
 
 ---
 
+### 6. 📋 Types de Points Relais Disponibles
+
+**Endpoint:** `GET /api/v1/admin/relay-point-types`
+
+**Réponses:**
+- ✅ **200** : Liste des types disponibles
+- ❌ **401** : Non authentifié
+
+**Réponse exemple:**
+```json
+[
+  {
+    "value": "DEPOT",
+    "label": "Dépôt"
+  },
+  {
+    "value": "RETRAIT",
+    "label": "Retrait"
+  },
+  {
+    "value": "DEPOT_RETRAIT",
+    "label": "Dépôt et Retrait"
+  }
+]
+```
+
+**Service:**
+```javascript
+import { fetchRelayPointTypes } from '../services/relayPointService';
+
+const types = await fetchRelayPointTypes();
+// Utilisation dans un select
+```
+
+**Documentation:** [Guide Complet](./relay-point-types-endpoint.md)
+
+---
+
 ## 📊 Modèle de Données
 
 ### Structure d'un Point Relais

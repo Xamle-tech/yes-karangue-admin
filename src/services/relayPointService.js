@@ -45,6 +45,32 @@ export const fetchRelayPoints = async (params = {}) => {
 };
 
 /**
+ * Récupère la liste des types de points relais disponibles
+ * @returns {Promise<Array>} Liste des types avec value et label
+ */
+export const fetchRelayPointTypes = async () => {
+    try {
+        const url = buildUrl('/api/v1/admin/relay-point-types');
+
+        const response = await authorizedFetch(url, {
+            method: 'GET',
+            headers: getDefaultHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Erreur lors de la récupération des types de points relais:', error);
+        throw error;
+    }
+};
+
+
+/**
  * Récupère les détails d'un point de retrait par son ID
  * @param {number} relayPointId - L'ID du point de retrait
  * @returns {Promise<Object>} Les détails du point de retrait
