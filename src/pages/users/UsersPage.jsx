@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Eye, Edit2, Trash2, MapPin, ChevronDown, LayoutGrid, List as ListIcon } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, Trash2, MapPin, ChevronDown, LayoutGrid, List as ListIcon, Mail } from 'lucide-react';
 import UserForm from '../../components/forms/UserForm';
 import Toast from '../../components/Toast';
-import { fetchUsers, deleteUser } from '../../services/userService';
+import { fetchUsers, deleteUser, resendUserInvitation } from '../../services/userService';
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
@@ -15,6 +15,7 @@ export default function UsersPage() {
   const [filterRelayPoint, setFilterRelayPoint] = useState('');
   const [viewMode, setViewMode] = useState('list');
   const [deletingId, setDeletingId] = useState(null);
+  const [resendingId, setResendingId] = useState(null);
   const [toast, setToast] = useState(null);
 
   // Pagination
@@ -87,9 +88,42 @@ export default function UsersPage() {
     setShowForm(false);
   };
 
-  const handleDeleteUser = (id) => {
+  const handleDeleteUser = async (id) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur?')) {
-      setUsers(users.filter((u) => u.id !== id));
+      try {
+        setDeletingId(id);
+        await deleteUser(id);
+        setToast({
+          message: 'Utilisateur supprimé avec succès',
+          type: 'success'
+        });
+        loadUsers(); // Recharger la liste
+      } catch (error) {
+        setToast({
+          message: error.message,
+          type: 'error'
+        });
+      } finally {
+        setDeletingId(null);
+      }
+    }
+  };
+
+  const handleResendInvitation = async (userId) => {
+    try {
+      setResendingId(userId);
+      await resendUserInvitation(userId);
+      setToast({
+        message: 'Invitation renvoyée avec succès',
+        type: 'success'
+      });
+    } catch (error) {
+      setToast({
+        message: error.message,
+        type: 'error'
+      });
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -326,6 +360,21 @@ export default function UsersPage() {
                   {/* Actions */}
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-1">
+                      {/* Renvoyer l'invitation pour les utilisateurs en attente */}
+                      {user.status === 'pending' && (
+                        <button
+                          onClick={() => handleResendInvitation(user.id)}
+                          disabled={resendingId === user.id}
+                          className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Renvoyer l'invitation"
+                        >
+                          {resendingId === user.id ? (
+                            <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+                          ) : (
+                            <Mail className="h-4 w-4" />
+                          )}
+                        </button>
+                      )}
                       <button
                         className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition"
                         title="Voir"
@@ -344,10 +393,15 @@ export default function UsersPage() {
                       </button>
                       <button
                         onClick={() => handleDeleteUser(user.id)}
-                        className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition"
+                        disabled={deletingId === user.id}
+                        className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Supprimer"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        {deletingId === user.id ? (
+                          <div className="animate-spin h-4 w-4 border-2 border-red-500 rounded-full border-t-transparent"></div>
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
                       </button>
                     </div>
                   </td>
@@ -392,6 +446,15 @@ export default function UsersPage() {
         <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
           <p className="text-gray-600 font-medium">Aucun utilisateur trouvé</p>
         </div>
+      )}
+
+      {/* Toast Notifications */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   );

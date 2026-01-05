@@ -167,3 +167,82 @@ export const deleteUser = async (userId) => {
         throw error;
     }
 };
+
+/**
+ * Renvoie l'email d'invitation à un utilisateur
+ * @param {number} userId - L'ID de l'utilisateur
+ * @returns {Promise<void>}
+ */
+export const resendUserInvitation = async (userId) => {
+    try {
+        const url = buildUrl(`/api/v1/admin/users/${userId}/invite/resend`);
+
+        const response = await authorizedFetch(url, {
+            method: 'POST',
+            headers: getDefaultHeaders(),
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('Utilisateur non trouvé');
+            }
+            if (response.status === 409) {
+                throw new Error('Invitation déjà acceptée ou utilisateur déjà actif');
+            }
+            if (response.status === 429) {
+                throw new Error('Trop de tentatives. Veuillez réessayer plus tard');
+            }
+            if (response.status === 503) {
+                throw new Error('Service email indisponible. Veuillez réessayer plus tard');
+            }
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
+        }
+
+        return;
+    } catch (error) {
+        console.error('Erreur lors du renvoi de l\'invitation:', error);
+        throw error;
+    }
+};
+
+/**
+ * Recherche d'utilisateurs (autocomplete)
+ * @param {Object} params - Paramètres de recherche
+ * @param {string} params.q - Terme de recherche
+ * @param {string} params.role - Filtrer par rôle (ADMIN, AGENT, MANAGER)
+ * @param {number} params.limit - Nombre de résultats (défaut: 20)
+ * @returns {Promise<Array>} Liste d'utilisateurs correspondants
+ */
+export const lookupUsers = async (params = {}) => {
+    try {
+        const queryParams = new URLSearchParams();
+        Object.keys(params).forEach(key => {
+            if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
+                queryParams.append(key, params[key]);
+            }
+        });
+
+        const queryString = queryParams.toString();
+        const url = buildUrl('/api/v1/admin/users/lookup' + (queryString ? `?${queryString}` : ''));
+
+        const response = await authorizedFetch(url, {
+            method: 'GET',
+            headers: getDefaultHeaders(),
+        });
+
+        if (!response.ok) {
+            if (response.status === 422) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Erreur de validation');
+            }
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Erreur lors de la recherche d\'utilisateurs:', error);
+        throw error;
+    }
+};
