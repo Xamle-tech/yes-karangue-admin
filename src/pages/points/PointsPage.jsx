@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, MapPin, Users, Package, Eye, LayoutGrid, List as ListIcon, ChevronDown } from 'lucide-react';
 import PointForm from '../../components/forms/PointForm';
 import PointDetails from '../../components/modals/PointDetails';
-import { fetchRelayPoints, deleteRelayPoint } from '../../services/relayPointService';
+import { fetchRelayPoints, deleteRelayPoint, createRelayPoint } from '../../services/relayPointService';
 
 export default function PointsPage() {
   const [points, setPoints] = useState([]);
@@ -49,8 +49,13 @@ export default function PointsPage() {
   };
 
   const handleAddPoint = async (formData) => {
-    setShowForm(false);
-    await loadRelayPoints();
+    try {
+      await createRelayPoint(formData);
+      setShowForm(false);
+      await loadRelayPoints();
+    } catch (error) {
+      throw error; // Laisser le formulaire gérer l'erreur
+    }
   };
 
   const handleDeletePoint = async (id) => {
@@ -243,8 +248,8 @@ export default function PointsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${point.is_active || point.status === 'Actif'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
                           }`}>
                           {point.is_active || point.status === 'Actif' ? 'Actif' : 'Inactif'}
                         </span>
