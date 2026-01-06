@@ -3,9 +3,20 @@ import { Plus, Search, Edit2, Trash2, Eye, LayoutGrid, List as ListIcon, Chevron
 import TransporterForm from '../../components/forms/TransporterForm';
 import { fetchTransporters, createTransporter } from '../../services/transporterService';
 
+// Fonction utilitaire pour obtenir les initiales
+const getInitials = (name) => {
+  if (!name) return '?';
+  const parts = name.split(' ');
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+};
+
 export default function TransportersPage() {
   const [transporters, setTransporters] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingTransporter, setEditingTransporter] = useState(null);
@@ -14,10 +25,19 @@ export default function TransportersPage() {
   const loadTransporters = async () => {
     try {
       setLoading(true);
-      const data = await fetchTransporters();
-      setTransporters(Array.isArray(data) ? data : (data.data || []));
+      setError(null);
+      // Passer le paramètre offset=0 comme demandé
+      const data = await fetchTransporters({ offset: 0 });
+      console.log('📦 Données transporteurs de API:', data);
+
+      const transportersData = Array.isArray(data) ? data : (data.data || []);
+      console.log('📦 Transporteurs extraits:', transportersData);
+      console.log('📦 Nombre de transporteurs:', transportersData.length);
+
+      setTransporters(transportersData);
     } catch (error) {
-      console.error("Erreur chargement:", error);
+      console.error("❌ Erreur chargement transporteurs:", error);
+      setTransporters([]);
     } finally {
       setLoading(false);
     }
@@ -29,8 +49,8 @@ export default function TransportersPage() {
 
   const filteredTransporters = transporters.filter(
     (transporter) =>
-      transporter.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transporter.email.toLowerCase().includes(searchTerm.toLowerCase())
+      (transporter.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (transporter.email || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAddTransporter = async (formData) => {
@@ -60,10 +80,15 @@ export default function TransportersPage() {
     }
   };
 
+  // Calcul des statistiques à partir des données
   const stats = {
-    active: '03',
-    rating: '4.8',
-    earnings: '12.7M'
+    active: transporters.filter(t => t.status === 'active').length.toString().padStart(2, '0'),
+    rating: transporters.length > 0
+      ? (transporters.reduce((sum, t) => sum + (t.rating || 0), 0) / transporters.length).toFixed(1)
+      : '0.0',
+    earnings: transporters.length > 0
+      ? `${(transporters.reduce((sum, t) => sum + (t.total_earnings || 0), 0) / 1000000).toFixed(1)}M`
+      : '0M'
   }
 
   return (
@@ -173,6 +198,17 @@ export default function TransportersPage() {
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-500">Chargement des transporteurs...</div>
+        ) : error ? (
+          <div className="p-8 text-center">
+            <p className="text-red-600 font-medium mb-2">❌ Erreur</p>
+            <p className="text-gray-600">{error}</p>
+            <button
+              onClick={loadTransporters}
+              className="mt-4 px-4 py-2 bg-[#E8B44D] text-white rounded-lg hover:bg-[#D9A53C] transition"
+            >
+              Réessayer
+            </button>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">

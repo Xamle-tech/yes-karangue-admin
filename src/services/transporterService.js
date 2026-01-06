@@ -11,7 +11,11 @@ import { authorizedFetch } from './authService';
  */
 export const fetchTransporters = async (params = {}) => {
     try {
-        const url = new URL(buildUrl(AUTH_ENDPOINTS.ADMIN_TRANSPORTERS));
+        const baseUrl = buildUrl(AUTH_ENDPOINTS.ADMIN_TRANSPORTERS);
+        console.log('🔧 Base URL:', baseUrl);
+
+        // Construire l'URL avec les paramètres (utiliser window.location.origin pour les URLs relatives)
+        const url = new URL(baseUrl, window.location.origin);
 
         // Ajouter les paramètres de requête
         Object.keys(params).forEach(key => {
@@ -19,6 +23,9 @@ export const fetchTransporters = async (params = {}) => {
                 url.searchParams.append(key, params[key]);
             }
         });
+
+        console.log('🌐 URL appelée:', url.toString());
+        console.log('🔑 Token présent:', !!localStorage.getItem('authToken'));
 
         const response = await authorizedFetch(url.toString(), {
             method: 'GET',
