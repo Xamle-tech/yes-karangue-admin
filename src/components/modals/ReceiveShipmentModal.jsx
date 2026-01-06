@@ -149,8 +149,22 @@ export default function ReceiveShipmentModal({ onClose, onReceive, shipments }) 
           {/* Method Selection */}
           {!confirmStep && (
             <div className="space-y-6">
-              {/* Method Tabs - Button Style - INVERSÉ ICI */}
+              {/* Method Tabs - Button Style */}
               <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setMethod('qr');
+                    setError('');
+                    setManualCode('');
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-medium transition ${method === 'qr'
+                    ? 'bg-[#E8B44D] text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                >
+                  <QrCode className="h-5 w-5" />
+                  Scanner un QR
+                </button>
                 <button
                   onClick={() => {
                     setMethod('manual');
@@ -166,20 +180,6 @@ export default function ReceiveShipmentModal({ onClose, onReceive, shipments }) 
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   Entrer un numéro
-                </button>
-                <button
-                  onClick={() => {
-                    setMethod('qr');
-                    setError('');
-                    setManualCode('');
-                  }}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-medium transition ${method === 'qr'
-                    ? 'bg-[#E8B44D] text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                >
-                  <QrCode className="h-5 w-5" />
-                  Scanner un QR
                 </button>
               </div>
 
