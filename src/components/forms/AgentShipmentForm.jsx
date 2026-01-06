@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, User, MapPin, Package as PackageIcon, Truck, Upload as UploadIcon, Search } from 'lucide-react';
+import { fetchTransporters } from '../../services/transporterService';
 
 const ID_TYPES = ['CNI', 'Passeport', 'Carte consulaire'];
 
@@ -37,6 +38,26 @@ export default function AgentShipmentForm({ onSubmit, onClose }) {
     sender_id_back: null,
     package_photo: null,
   });
+  const [transporters, setTransporters] = useState([]);
+  const [loadingTransporters, setLoadingTransporters] = useState(false);
+
+  useEffect(() => {
+    const loadTransporters = async () => {
+      try {
+        setLoadingTransporters(true);
+        // Utiliser la limite de 200 comme demandé
+        const response = await fetchTransporters({ limit: 200, offset: 0 });
+        const transportersList = Array.isArray(response) ? response : (response.data || []);
+        setTransporters(transportersList);
+      } catch (error) {
+        console.error('Erreur lors du chargement des transporteurs:', error);
+      } finally {
+        setLoadingTransporters(false);
+      }
+    };
+
+    loadTransporters();
+  }, []);
 
   const validateForm = () => {
     const newErrors = {};
@@ -558,15 +579,22 @@ export default function AgentShipmentForm({ onSubmit, onClose }) {
                   Transporteur
                 </label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
+                  <select
                     name="transporter_id"
                     value={formData.transporter_id}
                     onChange={handleChange}
-                    placeholder="Choisir un transporteur"
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                  />
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition bg-white text-sm"
+                    disabled={loadingTransporters}
+                  >
+                    <option value="">
+                      {loadingTransporters ? 'Chargement...' : 'Choisir un transporteur'}
+                    </option>
+                    {transporters.map(transporter => (
+                      <option key={transporter.id} value={transporter.id}>
+                        {transporter.name || transporter.company_name} - {transporter.vehicle_type}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>

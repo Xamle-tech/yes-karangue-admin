@@ -92,20 +92,26 @@ export const fetchAgentShipmentById = async (shipmentId) => {
  */
 export const createAgentShipment = async (shipmentData) => {
     try {
-        // Créer un FormData pour envoyer des fichiers (multipart/form-data)
-        const formData = new FormData();
+        let formData;
 
-        // Ajouter tous les champs texte
-        Object.keys(shipmentData).forEach(key => {
-            if (shipmentData[key] !== undefined && shipmentData[key] !== null && shipmentData[key] !== '') {
-                // Si c'est un File, l'ajouter tel quel
-                if (shipmentData[key] instanceof File) {
-                    formData.append(key, shipmentData[key]);
-                } else {
-                    formData.append(key, shipmentData[key]);
+        if (shipmentData instanceof FormData) {
+            formData = shipmentData;
+        } else {
+            // Créer un FormData pour envoyer des fichiers (multipart/form-data)
+            formData = new FormData();
+
+            // Ajouter tous les champs texte
+            Object.keys(shipmentData).forEach(key => {
+                if (shipmentData[key] !== undefined && shipmentData[key] !== null && shipmentData[key] !== '') {
+                    // Si c'est un File, l'ajouter tel quel
+                    if (shipmentData[key] instanceof File) {
+                        formData.append(key, shipmentData[key]);
+                    } else {
+                        formData.append(key, shipmentData[key]);
+                    }
                 }
-            }
-        });
+            });
+        }
 
         const url = buildUrl('/api/v1/agent/shipments');
 

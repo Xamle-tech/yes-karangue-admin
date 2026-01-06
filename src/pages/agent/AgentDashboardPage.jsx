@@ -64,19 +64,39 @@ export default function AgentDashboardPage() {
 
   const handleAddShipment = async (formData) => {
     try {
-      // Importer createAgentShipment depuis le service
-      const { createAgentShipment } = await import('../../services/agentShipmentsService');
+      // Importer les services nécessaires dynamiquement
+      const { createAgentShipment, downloadWaybillPDF } = await import('../../services/agentShipmentsService');
 
-      // Appeler l'API pour créer le colis
+      // 1. Appeler l'API pour créer le colis
       const newShipment = await createAgentShipment(formData);
-
       console.log('📦 Colis créé:', newShipment);
+
       setCreatedShipment(newShipment);
 
-      // Recharger la liste des colis
+      // 2. Générer et ouvrir la feuille de route si l'ID est disponible
+      if (newShipment && newShipment.id) {
+        try {
+          console.log('📄 Génération de la feuille de route pour le colis:', newShipment.id);
+          const pdfBlob = await downloadWaybillPDF(newShipment.id);
+
+          // Créer une URL pour le Blob et l'ouvrir dans un nouvel onglet
+          const pdfUrl = window.URL.createObjectURL(pdfBlob);
+          window.open(pdfUrl, '_blank');
+
+          // Nettoyer l'URL après un délai pour libérer la mémoire (optionnel mais recommandé)
+          setTimeout(() => window.URL.revokeObjectURL(pdfUrl), 10000);
+
+        } catch (pdfError) {
+          console.error('⚠️ Erreur lors de la génération du PDF:', pdfError);
+          // On ne bloque pas le flux de succès si le PDF échoue, mais on peut notifier l'utilisateur
+          alert('Le colis a été créé mais la feuille de route n\'a pas pu être générée automatiquement.');
+        }
+      }
+
+      // 3. Recharger la liste des colis
       await loadShipments();
 
-      // Fermer le formulaire et ouvrir le modal de succès
+      // 4. Fermer le formulaire et ouvrir le modal de succès
       setShowForm(false);
       setShowSuccessModal(true);
 
