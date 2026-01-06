@@ -10,8 +10,10 @@ import {
   ChevronDown
 } from 'lucide-react';
 import AgentShipmentForm from '../../components/forms/AgentShipmentForm';
+import AgentShipmentDetails from '../../components/AgentShipmentDetails';
 import ShipmentStatusUpdate from '../../components/modals/ShipmentStatusUpdate';
 import ReceiveShipmentModal from '../../components/modals/ReceiveShipmentModal';
+import ShipmentSuccessModal from '../../components/modals/ShipmentSuccessModal';
 import { fetchAgentShipments, createAgentShipment } from '../../services/agentShipmentsService';
 
 export default function AgentDashboardPage() {
@@ -21,6 +23,9 @@ export default function AgentDashboardPage() {
   const [showForm, setShowForm] = useState(false);
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
   const [showReceive, setShowReceive] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [createdShipment, setCreatedShipment] = useState(null);
   const [selectedShipment, setSelectedShipment] = useState(null);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
 
@@ -63,13 +68,18 @@ export default function AgentDashboardPage() {
       const { createAgentShipment } = await import('../../services/agentShipmentsService');
 
       // Appeler l'API pour créer le colis
-      await createAgentShipment(formData);
+      const newShipment = await createAgentShipment(formData);
+
+      console.log('📦 Colis créé:', newShipment);
+      setCreatedShipment(newShipment);
 
       // Recharger la liste des colis
       await loadShipments();
 
-      // Fermer le formulaire
+      // Fermer le formulaire et ouvrir le modal de succès
       setShowForm(false);
+      setShowSuccessModal(true);
+
     } catch (error) {
       console.error('❌ Erreur lors de la création du colis:', error);
       alert('Erreur lors de la création du colis. Veuillez réessayer.');
@@ -110,6 +120,19 @@ export default function AgentDashboardPage() {
     { label: 'En cours', value: shipments.filter(s => s.status === 'EN_COURS_LIVRAISON').length.toString(), icon: Package },
   ];
 
+  if (showDetails && selectedShipment) {
+    return (
+      <AgentShipmentDetails
+        shipmentId={selectedShipment.id}
+        onBack={() => {
+          setShowDetails(false);
+          setSelectedShipment(null);
+          loadShipments();
+        }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -145,6 +168,17 @@ export default function AgentDashboardPage() {
         <AgentShipmentForm
           onSubmit={handleAddShipment}
           onClose={() => setShowForm(false)}
+        />
+      )}
+
+      {showSuccessModal && createdShipment && (
+        <ShipmentSuccessModal
+          trackingNumber={createdShipment.tracking_number}
+          onClose={() => setShowSuccessModal(false)}
+          onPrint={() => {
+            // Implémentation future pour l'impression
+            console.log('Impression pour:', createdShipment.tracking_number);
+          }}
         />
       )}
 
@@ -330,7 +364,13 @@ export default function AgentDashboardPage() {
 
                       {/* Action */}
                       <td className="py-4 px-6">
-                        <button className="p-2 hover:bg-gray-100 rounded-lg transition">
+                        <button
+                          onClick={() => {
+                            setSelectedShipment(shipment);
+                            setShowDetails(true);
+                          }}
+                          className="p-2 hover:bg-gray-100 rounded-lg transition"
+                        >
                           <Eye className="h-5 w-5 text-gray-600" />
                         </button>
                       </td>
