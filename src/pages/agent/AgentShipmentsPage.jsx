@@ -247,9 +247,9 @@ export default function AgentShipmentsPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${shipment.status === 'DEPOT' ? 'bg-orange-100 text-orange-800' :
-                                                        shipment.status === 'EN_COURS' ? 'bg-blue-100 text-blue-800' :
-                                                            shipment.status === 'LIVRE' ? 'bg-green-100 text-green-800' :
-                                                                'bg-gray-100 text-gray-800'
+                                                    shipment.status === 'EN_COURS' ? 'bg-blue-100 text-blue-800' :
+                                                        shipment.status === 'LIVRE' ? 'bg-green-100 text-green-800' :
+                                                            'bg-gray-100 text-gray-800'
                                                     }`}>
                                                     {shipment.status || 'N/A'}
                                                 </span>
@@ -374,9 +374,9 @@ export default function AgentShipmentsPage() {
                                     <div>
                                         <p className="text-sm text-gray-500">Statut</p>
                                         <span className={`inline-flex items-center px-3 py-1 rounded-lg text-sm font-semibold ${selectedShipment.status === 'DEPOT' ? 'bg-orange-100 text-orange-800' :
-                                                selectedShipment.status === 'EN_COURS' ? 'bg-blue-100 text-blue-800' :
-                                                    selectedShipment.status === 'LIVRE' ? 'bg-green-100 text-green-800' :
-                                                        'bg-gray-100 text-gray-800'
+                                            selectedShipment.status === 'EN_COURS' ? 'bg-blue-100 text-blue-800' :
+                                                selectedShipment.status === 'LIVRE' ? 'bg-green-100 text-green-800' :
+                                                    'bg-gray-100 text-gray-800'
                                             }`}>
                                             {selectedShipment.status || 'N/A'}
                                         </span>

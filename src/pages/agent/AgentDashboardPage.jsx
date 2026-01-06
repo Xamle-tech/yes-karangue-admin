@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Plus,
   Search,
@@ -12,86 +12,11 @@ import {
 import AgentShipmentForm from '../../components/forms/AgentShipmentForm';
 import ShipmentStatusUpdate from '../../components/modals/ShipmentStatusUpdate';
 import ReceiveShipmentModal from '../../components/modals/ReceiveShipmentModal';
+import { fetchAgentShipments, createAgentShipment } from '../../services/agentShipmentsService';
 
 export default function AgentDashboardPage() {
-  const [shipments, setShipments] = useState([
-    {
-      id: 'YK-2025-05',
-      trackingNumber: 'TRK005',
-      shipper: 'Entreprise A',
-      recipient: 'Client XYZ',
-      recipientPhone: '+221 77 123 45 67',
-      status: 'Dépôt',
-      description: 'Colis électronique',
-      weight: 2.5,
-      origin: 'Dakar',
-      destination: 'Thiès',
-      createdAt: '2025-01-15',
-      progress: 1,
-      totalSteps: 5,
-    },
-    {
-      id: 'YK-2025-04',
-      trackingNumber: 'TRK004',
-      shipper: 'Commerce Y',
-      recipient: 'Client XYZ',
-      recipientPhone: '+221 78 987 65 43',
-      status: 'Prise en charge',
-      description: 'Documents importants',
-      weight: 1.2,
-      origin: 'Thiès',
-      destination: 'Kaolack',
-      createdAt: '2025-01-15',
-      progress: 2,
-      totalSteps: 5,
-    },
-    {
-      id: 'YK-2025-03',
-      trackingNumber: 'TRK003',
-      shipper: 'Commerce X',
-      recipient: 'Client XYZ',
-      recipientPhone: '+221 77 555 55 55',
-      status: 'En cours de livraison',
-      description: 'Documents importants',
-      weight: 0.8,
-      origin: 'Thiès',
-      destination: 'Kaolack',
-      createdAt: '2025-01-15',
-      progress: 3,
-      totalSteps: 5,
-    },
-    {
-      id: 'YK-2025-02',
-      trackingNumber: 'TRK002',
-      shipper: 'Commerce W',
-      recipient: 'Client XYZ',
-      recipientPhone: '+221 78 987 65 43',
-      status: 'Récupéré',
-      description: 'Documents importants',
-      weight: 1.2,
-      origin: 'Thiès',
-      destination: 'Kaolack',
-      createdAt: '2025-01-15',
-      progress: 4,
-      totalSteps: 5,
-    },
-    {
-      id: 'YK-2025-01',
-      trackingNumber: 'TRK001',
-      shipper: 'Commerce Z',
-      recipient: 'Client XYZ',
-      recipientPhone: '+221 78 987 65 43',
-      status: 'Livré',
-      description: 'Documents importants',
-      weight: 1.2,
-      origin: 'Thiès',
-      destination: 'Kaolack',
-      createdAt: '2025-01-15',
-      progress: 5,
-      totalSteps: 5,
-    },
-  ]);
-
+  const [shipments, setShipments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
@@ -99,27 +24,56 @@ export default function AgentDashboardPage() {
   const [selectedShipment, setSelectedShipment] = useState(null);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
 
+  // Charger les colis depuis l'API
+  useEffect(() => {
+    loadShipments();
+  }, []);
+
+  const loadShipments = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchAgentShipments();
+
+      // Gérer la réponse paginée
+      const shipmentsData = Array.isArray(data) ? data : (data.data || []);
+      setShipments(shipmentsData);
+    } catch (error) {
+      console.error('Erreur lors du chargement des colis:', error);
+      setShipments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredShipments = shipments.filter(
-    (shipment) =>
-      shipment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      shipment.trackingNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      shipment.recipient.toLowerCase().includes(searchTerm.toLowerCase())
+    (shipment) => {
+      const search = searchTerm.toLowerCase();
+      const recipientName = `${shipment.recipient_first_name || ''} ${shipment.recipient_last_name || ''}`.toLowerCase();
+      return (
+        (shipment.id?.toString() || '').includes(search) ||
+        (shipment.tracking_number || '').toLowerCase().includes(search) ||
+        recipientName.includes(search)
+      );
+    }
   );
 
-  const handleAddShipment = (formData) => {
-    setShipments([
-      ...shipments,
-      {
-        id: `YK-2025-${String(shipments.length + 1).padStart(2, '0')}`,
-        trackingNumber: `TRK${String(shipments.length + 1).padStart(3, '0')}`,
-        ...formData,
-        status: 'Dépôt',
-        createdAt: new Date().toISOString().split('T')[0],
-        progress: 1,
-        totalSteps: 5,
-      },
-    ]);
-    setShowForm(false);
+  const handleAddShipment = async (formData) => {
+    try {
+      // Importer createAgentShipment depuis le service
+      const { createAgentShipment } = await import('../../services/agentShipmentsService');
+
+      // Appeler l'API pour créer le colis
+      await createAgentShipment(formData);
+
+      // Recharger la liste des colis
+      await loadShipments();
+
+      // Fermer le formulaire
+      setShowForm(false);
+    } catch (error) {
+      console.error('❌ Erreur lors de la création du colis:', error);
+      alert('Erreur lors de la création du colis. Veuillez réessayer.');
+    }
   };
 
   const handleReceiveShipment = (shipment) => {
@@ -133,27 +87,27 @@ export default function AgentDashboardPage() {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      'Dépôt': { color: 'bg-gray-100 text-gray-700', icon: '📦' },
-      'Prise en charge': { color: 'bg-blue-100 text-blue-700', icon: '📋' },
-      'En cours de livraison': { color: 'bg-yellow-100 text-yellow-700', icon: '🚚' },
-      'Récupéré': { color: 'bg-purple-100 text-purple-700', icon: '📥' },
-      'Livré': { color: 'bg-green-100 text-green-700', icon: '✅' },
+      'DEPOT': { color: 'bg-orange-100 text-orange-700', icon: '📦', label: 'Dépôt' },
+      'PRISE_EN_CHARGE': { color: 'bg-blue-100 text-blue-700', icon: '📋', label: 'Prise en charge' },
+      'EN_COURS_LIVRAISON': { color: 'bg-yellow-100 text-yellow-700', icon: '🚚', label: 'En cours de livraison' },
+      'RECUPERE': { color: 'bg-purple-100 text-purple-700', icon: '📥', label: 'Récupéré' },
+      'LIVRE': { color: 'bg-green-100 text-green-700', icon: '✅', label: 'Livré' },
     };
 
-    const config = statusConfig[status] || statusConfig['Dépôt'];
+    const config = statusConfig[status] || statusConfig['DEPOT'];
     return (
       <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold ${config.color}`}>
         <span>{config.icon}</span>
-        {status}
+        {config.label || status}
       </span>
     );
   };
 
   const stats = [
     { label: 'Total colis', value: shipments.length.toString().padStart(2, '0'), icon: Package },
-    { label: 'En attente', value: shipments.filter(s => s.status === 'Dépôt').length.toString(), icon: Package },
-    { label: 'Pris en charge', value: shipments.filter(s => s.status === 'Prise en charge').length.toString(), icon: Package },
-    { label: 'En cours', value: shipments.filter(s => s.status === 'En cours de livraison').length.toString(), icon: Package },
+    { label: 'En dépôt', value: shipments.filter(s => s.status === 'DEPOT').length.toString(), icon: Package },
+    { label: 'Pris en charge', value: shipments.filter(s => s.status === 'PRISE_EN_CHARGE').length.toString(), icon: Package },
+    { label: 'En cours', value: shipments.filter(s => s.status === 'EN_COURS_LIVRAISON').length.toString(), icon: Package },
   ];
 
   return (
@@ -279,96 +233,119 @@ export default function AgentDashboardPage() {
 
       {/* Shipments Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Colis</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Description</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Expéditeur</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Destinataire</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Progression</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Statut</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Date demande</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredShipments.map((shipment, index) => (
-                <tr
-                  key={shipment.id}
-                  className={`border-b border-gray-100 hover:bg-gray-50 transition ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
-                >
-                  {/* Colis */}
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-orange-50 p-2 rounded-lg">
-                        <Package className="h-5 w-5 text-orange-500" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">{shipment.id}</p>
-                        <p className="text-sm text-gray-500">{shipment.origin} → {shipment.destination}</p>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Description */}
-                  <td className="py-4 px-6">
-                    <p className="text-sm text-gray-900">{shipment.description}</p>
-                  </td>
-
-                  {/* Expéditeur */}
-                  <td className="py-4 px-6">
-                    <p className="text-sm text-gray-900">{shipment.shipper}</p>
-                  </td>
-
-                  {/* Destinataire */}
-                  <td className="py-4 px-6">
-                    <p className="text-sm text-gray-900">{shipment.recipient}</p>
-                  </td>
-
-                  {/* Progression */}
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[100px]">
-                        <div
-                          className="bg-[#E8B44D] h-2 rounded-full transition-all"
-                          style={{ width: `${(shipment.progress / shipment.totalSteps) * 100}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-xs text-gray-600 font-medium">
-                        {shipment.progress}/{shipment.totalSteps}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* Statut */}
-                  <td className="py-4 px-6">
-                    {getStatusBadge(shipment.status)}
-                  </td>
-
-                  {/* Date */}
-                  <td className="py-4 px-6">
-                    <p className="text-sm text-gray-600">{shipment.createdAt}</p>
-                  </td>
-
-                  {/* Action */}
-                  <td className="py-4 px-6">
-                    <button className="p-2 hover:bg-gray-100 rounded-lg transition">
-                      <Eye className="h-5 w-5 text-gray-600" />
-                    </button>
-                  </td>
+        {loading ? (
+          <div className="p-12 text-center">
+            <div className="inline-block animate-spin h-8 w-8 border-4 border-[#E8B44D] rounded-full border-t-transparent"></div>
+            <p className="mt-4 text-gray-600">Chargement des colis...</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Colis</th>
+                  <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Description</th>
+                  <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Expéditeur</th>
+                  <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Destinataire</th>
+                  <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Progression</th>
+                  <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Statut</th>
+                  <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Date demande</th>
+                  <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredShipments.length > 0 ? (
+                  filteredShipments.map((shipment, index) => (
+                    <tr
+                      key={shipment.id}
+                      className={`border-b border-gray-100 hover:bg-gray-50 transition ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
+                    >
+                      {/* Colis */}
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-orange-50 p-2 rounded-lg">
+                            <Package className="h-5 w-5 text-orange-500" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">{shipment.tracking_number || 'N/A'}</p>
+                            <p className="text-sm text-gray-500">{shipment.sender_address || ''} → {shipment.recipient_address || ''}</p>
+                          </div>
+                        </div>
+                      </td>
 
-        {/* Empty State */}
-        {filteredShipments.length === 0 && (
-          <div className="text-center py-12">
-            <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 font-medium">Aucun colis trouvé</p>
+                      {/* Description */}
+                      <td className="py-4 px-6">
+                        <p className="text-sm text-gray-900">{shipment.content_description || 'N/A'}</p>
+                      </td>
+
+                      {/* Expéditeur */}
+                      <td className="py-4 px-6">
+                        <p className="text-sm text-gray-900">{`${shipment.sender_first_name || ''} ${shipment.sender_last_name || ''}`.trim() || 'N/A'}</p>
+                      </td>
+
+                      {/* Destinataire */}
+                      <td className="py-4 px-6">
+                        <p className="text-sm text-gray-900">{`${shipment.recipient_first_name || ''} ${shipment.recipient_last_name || ''}`.trim() || 'N/A'}</p>
+                      </td>
+
+                      {/* Progression - basée sur le statut */}
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[100px]">
+                            <div
+                              className="bg-[#E8B44D] h-2 rounded-full transition-all"
+                              style={{
+                                width: `${shipment.status === 'DEPOT' ? 20 :
+                                  shipment.status === 'PRISE_EN_CHARGE' ? 40 :
+                                    shipment.status === 'EN_COURS_LIVRAISON' ? 60 :
+                                      shipment.status === 'RECUPERE' ? 80 :
+                                        shipment.status === 'LIVRE' ? 100 : 0
+                                  }%`
+                              }}
+                            ></div>
+                          </div>
+                          <span className="text-xs text-gray-600 font-medium">
+                            {
+                              shipment.status === 'DEPOT' ? '1/5' :
+                                shipment.status === 'PRISE_EN_CHARGE' ? '2/5' :
+                                  shipment.status === 'EN_COURS_LIVRAISON' ? '3/5' :
+                                    shipment.status === 'RECUPERE' ? '4/5' :
+                                      shipment.status === 'LIVRE' ? '5/5' : '0/5'
+                            }
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Statut */}
+                      <td className="py-4 px-6">
+                        {getStatusBadge(shipment.status)}
+                      </td>
+
+                      {/* Date */}
+                      <td className="py-4 px-6">
+                        <p className="text-sm text-gray-600">
+                          {shipment.created_at ? new Date(shipment.created_at).toLocaleDateString('fr-FR') : 'N/A'}
+                        </p>
+                      </td>
+
+                      {/* Action */}
+                      <td className="py-4 px-6">
+                        <button className="p-2 hover:bg-gray-100 rounded-lg transition">
+                          <Eye className="h-5 w-5 text-gray-600" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="8" className="text-center py-12">
+                      <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600 font-medium">Aucun colis trouvé</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
