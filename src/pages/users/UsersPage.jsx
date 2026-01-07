@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, Eye, Edit2, Trash2, MapPin, ChevronDown, LayoutGrid, List as ListIcon, Mail } from 'lucide-react';
 import UserForm from '../../components/forms/UserForm';
 import Toast from '../../components/Toast';
-import { fetchUsers, deleteUser, resendUserInvitation } from '../../services/userService';
+import SuccessModal from '../../components/modals/SuccessModal';
+import ConfirmationModal from '../../components/modals/ConfirmationModal';
+import { fetchUsers, deleteUser, resendUserInvitation, createUser, updateUser } from '../../services/userService';
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
@@ -17,6 +19,9 @@ export default function UsersPage() {
   const [deletingId, setDeletingId] = useState(null);
   const [resendingId, setResendingId] = useState(null);
   const [toast, setToast] = useState(null);
+  const [successModal, setSuccessModal] = useState({ show: false, message: '' });
+  const [deleteModal, setDeleteModal] = useState({ show: false, userId: null, userName: '' });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -66,46 +71,68 @@ export default function UsersPage() {
     loadUsers();
   }, [searchTerm, filterRole, filterStatus, filterRelayPoint, currentPage, itemsPerPage]);
 
+  // Auto-close Success Modal
+  useEffect(() => {
+    if (successModal.show) {
+      const timer = setTimeout(() => {
+        setSuccessModal(prev => ({ ...prev, show: false }));
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [successModal.show]);
+
   const filteredUsers = users;
 
-  const handleAddUser = (formData) => {
-    if (editingUser) {
-      setUsers(users.map((u) => (u.id === editingUser.id ? { ...u, ...formData } : u)));
+  const handleAddUser = async (formData) => {
+    try {
+      if (editingUser) {
+        await updateUser(editingUser.id, formData);
+        setSuccessModal({ show: true, message: 'Informations mis à jour avec succès.' });
+      } else {
+        await createUser(formData);
+        setSuccessModal({ show: true, message: 'Utilisateur crée avec succès.' });
+      }
+      setShowForm(false);
       setEditingUser(null);
-    } else {
-      setUsers([
-        ...users,
-        {
-          id: Date.now(),
-          ...formData,
-          status: 'Actif',
-          statusColor: 'bg-green-100 text-green-700',
-          online: true,
-          joinDate: new Date().toISOString().split('T')[0],
-        },
-      ]);
+      loadUsers();
+    } catch (error) {
+      console.error(error);
+      throw error; // Let the form handle the error display or show toast here
     }
-    setShowForm(false);
   };
 
-  const handleDeleteUser = async (id) => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur?')) {
-      try {
-        setDeletingId(id);
-        await deleteUser(id);
-        setToast({
-          message: 'Utilisateur supprimé avec succès',
-          type: 'success'
-        });
-        loadUsers(); // Recharger la liste
-      } catch (error) {
-        setToast({
-          message: error.message,
-          type: 'error'
-        });
-      } finally {
-        setDeletingId(null);
-      }
+  const confirmDeleteUser = (user) => {
+    setDeleteModal({
+      show: true,
+      userId: user.id,
+      userName: user.name || user.full_name
+    });
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteModal.userId) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteUser(deleteModal.userId);
+      setDeleteModal({ show: false, userId: null, userName: '' });
+      loadUsers();
+      // Optional: Show success modal for deletion if needed, but usually toast is fine. 
+      // Requirement image 6 says "Supprimer l'utilisateur ...".
+      // Wait, is there a success modal for delete? Image 5 is confirmation. 
+      // Image 2/4 are success for create/edit. 
+      // I'll stick to confirmation + toast for now unless I see a delete success design.
+      setToast({
+        message: 'Utilisateur supprimé avec succès',
+        type: 'success'
+      });
+    } catch (error) {
+      setToast({
+        message: error.message,
+        type: 'error'
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -127,9 +154,22 @@ export default function UsersPage() {
     }
   };
 
-  const totalCredits = users.reduce((sum, u) => sum + u.credits, 0);
-  const clientsCount = users.filter((u) => u.role === 'Client').length;
-  const pointsCount = users.filter((u) => u.role === 'Gestionnaire Point').length;
+  const totalCredits = users.reduce((sum, u) => sum + (u.credits || 0), 0);
+  const clientsCount = users.filter((u) => u.role?.toLowerCase() === 'client').length;
+  const pointsCount = users.filter((u) => u.relay_point_id).length;
+
+  if (showForm) {
+    return (
+      <UserForm
+        user={editingUser}
+        onSubmit={handleAddUser}
+        onCancel={() => {
+          setShowForm(false);
+          setEditingUser(null);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -153,14 +193,7 @@ export default function UsersPage() {
         </button>
       </div>
 
-      {/* Form Modal */}
-      {showForm && (
-        <UserForm
-          user={editingUser}
-          onSubmit={handleAddUser}
-          onClose={() => setShowForm(false)}
-        />
-      )}
+      {/* Form Modal Replaced by Full Page Toggle above */}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -391,17 +424,13 @@ export default function UsersPage() {
                       >
                         <Edit2 className="h-4 w-4" />
                       </button>
+
                       <button
-                        onClick={() => handleDeleteUser(user.id)}
-                        disabled={deletingId === user.id}
-                        className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => confirmDeleteUser(user)}
+                        className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition"
                         title="Supprimer"
                       >
-                        {deletingId === user.id ? (
-                          <div className="animate-spin h-4 w-4 border-2 border-red-500 rounded-full border-t-transparent"></div>
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   </td>
@@ -442,20 +471,43 @@ export default function UsersPage() {
       </div>
 
       {/* Empty State */}
-      {filteredUsers.length === 0 && (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-          <p className="text-gray-600 font-medium">Aucun utilisateur trouvé</p>
-        </div>
-      )}
+      {
+        filteredUsers.length === 0 && (
+          <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <p className="text-gray-600 font-medium">Aucun utilisateur trouvé</p>
+          </div>
+        )
+      }
 
-      {/* Toast Notifications */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
-    </div>
+
+
+      {/* Success Modal */}
+      {
+        successModal.show && (
+          <SuccessModal
+            message={successModal.message}
+            onClose={() => setSuccessModal({ show: false, message: '' })}
+          />
+        )
+      }
+
+
+
+      {/* Delete Confirmation Modal */}
+      {
+        deleteModal.show && (
+          <ConfirmationModal
+            title="Supprimer l'utilisateur"
+            message={`Êtes-vous sûr de vouloir supprimer l’utilisateur ${deleteModal.userName} ?`}
+            confirmText="Supprimer"
+            cancelText="Annuler"
+            onConfirm={handleDeleteUser}
+            onCancel={() => setDeleteModal({ show: false, userId: null, userName: '' })}
+            isLoading={isDeleting}
+          />
+        )
+      }
+
+    </div >
   );
 }
