@@ -14,7 +14,7 @@ import AgentShipmentDetails from '../../components/AgentShipmentDetails';
 import ShipmentStatusUpdate from '../../components/modals/ShipmentStatusUpdate';
 import ReceiveShipmentModal from '../../components/modals/ReceiveShipmentModal';
 import ShipmentSuccessModal from '../../components/modals/ShipmentSuccessModal';
-import { fetchAgentShipments, createAgentShipment } from '../../services/agentShipmentsService';
+import { fetchAgentShipments, createAgentShipment, lookupAgentShipment } from '../../services/agentShipmentsService';
 
 export default function AgentDashboardPage() {
   const [shipments, setShipments] = useState([]);
@@ -28,11 +28,43 @@ export default function AgentDashboardPage() {
   const [createdShipment, setCreatedShipment] = useState(null);
   const [selectedShipment, setSelectedShipment] = useState(null);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
+  const [isCreating, setIsCreating] = useState(false);
 
-  // Charger les colis depuis l'API
+  // Gérer la recherche avec debounce
   useEffect(() => {
-    loadShipments();
-  }, []);
+    const delayDebounceFn = setTimeout(async () => {
+      if (searchTerm) {
+        try {
+          setLoading(true);
+          const data = await lookupAgentShipment(searchTerm);
+
+          let results = [];
+          if (data) {
+            if (Array.isArray(data)) {
+              results = data;
+            } else if (data.data) {
+              // Si la réponse est paginée ou wrappée dans "data"
+              results = Array.isArray(data.data) ? data.data : [data.data];
+            } else {
+              // Objet unique
+              results = [data];
+            }
+          }
+
+          setShipments(results);
+        } catch (error) {
+          console.error('Erreur lors de la recherche:', error);
+          setShipments([]);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        loadShipments();
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
 
   const loadShipments = async () => {
     try {
@@ -50,20 +82,12 @@ export default function AgentDashboardPage() {
     }
   };
 
-  const filteredShipments = shipments.filter(
-    (shipment) => {
-      const search = searchTerm.toLowerCase();
-      const recipientName = `${shipment.recipient_first_name || ''} ${shipment.recipient_last_name || ''}`.toLowerCase();
-      return (
-        (shipment.id?.toString() || '').includes(search) ||
-        (shipment.tracking_number || '').toLowerCase().includes(search) ||
-        recipientName.includes(search)
-      );
-    }
-  );
+  // On utilise directement shipments car le filtrage est fait côté serveur
+  const filteredShipments = shipments;
 
   const handleAddShipment = async (formData) => {
     try {
+      setIsCreating(true);
       // Importer les services nécessaires dynamiquement
       const { createAgentShipment, downloadWaybillPDF } = await import('../../services/agentShipmentsService');
 
@@ -103,6 +127,8 @@ export default function AgentDashboardPage() {
     } catch (error) {
       console.error('❌ Erreur lors de la création du colis:', error);
       alert('Erreur lors de la création du colis. Veuillez réessayer.');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -188,6 +214,7 @@ export default function AgentDashboardPage() {
         <AgentShipmentForm
           onSubmit={handleAddShipment}
           onClose={() => setShowForm(false)}
+          isLoading={isCreating}
         />
       )}
 

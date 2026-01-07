@@ -603,14 +603,23 @@ export default function AgentShipmentForm({ onSubmit, onClose }) {
             <div className="flex gap-4">
               <button
                 type="submit"
-                className="flex-1 px-6 py-3 bg-[#5B9BAD] text-white rounded-lg font-semibold hover:bg-[#4A8999] transition shadow-sm text-sm"
+                disabled={isLoading}
+                className="flex-1 px-6 py-3 bg-[#5B9BAD] text-white rounded-lg font-semibold hover:bg-[#4A8999] transition shadow-sm text-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                Générer la lettre de route
+                {isLoading ? (
+                  <>
+                    <Loader className="h-5 w-5 animate-spin" />
+                    <span>Traitement...</span>
+                  </>
+                ) : (
+                  'Générer la lettre de route'
+                )}
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="px-8 py-3 border-2 border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition text-sm"
+                disabled={isLoading}
+                className="px-8 py-3 border-2 border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition text-sm disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 Annuler
               </button>
