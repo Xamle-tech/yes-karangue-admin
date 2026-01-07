@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Upload, FileText, Image as ImageIcon } from 'lucide-react';
+import { fetchRelayPoints } from '../../services/relayPointService';
 
 export default function TransporterForm({ transporter, onSubmit, onClose }) {
   const [formData, setFormData] = useState({
@@ -10,7 +11,7 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
     vehicle_plate: '',
     insurer_name: '',
     insurance_expires_at: '',
-    station_id: '0', // Par défaut
+    station_id: '', // Par défaut vide — choisir un point
     password: 'password123', // Valeur par défaut requise souvent pour la création user
   });
 
@@ -21,6 +22,10 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
     vehicle_photos: null,
   });
 
+  const [stations, setStations] = useState([]);
+  const [stationsLoading, setStationsLoading] = useState(false);
+  const [stationsError, setStationsError] = useState(null);
+
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -30,6 +35,9 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
     if (!formData.email) newErrors.email = 'L\'email est requis';
     if (!formData.phone) newErrors.phone = 'Le téléphone est requis';
     if (!formData.vehicle_type) newErrors.vehicle_type = 'Le type de véhicule est requis';
+
+    // station_id est souvent requis par l'API — forcer la sélection
+    if (!formData.station_id) newErrors.station_id = 'Le point (station) est requis';
 
     // Validation des fichiers pour la création
     if (!transporter) {
@@ -52,9 +60,16 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
     setIsSubmitting(true);
     try {
       const data = new FormData();
-      // Champs texte
+      // Champs texte (on n'ajoute pas station_id si vide)
       Object.keys(formData).forEach(key => {
-        data.append(key, formData[key]);
+        if (key === 'station_id') {
+          if (formData.station_id) {
+            // s'assurer d'envoyer une valeur numérique en chaîne
+            data.append('station_id', String(Number(formData.station_id)));
+          }
+        } else {
+          data.append(key, formData[key]);
+        }
       });
 
       // Fichiers
@@ -95,6 +110,54 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
       });
     }
   };
+
+  // Charger les stations (points de retrait) si nécessaire
+  useEffect(() => {
+    const loadStations = async () => {
+      try {
+        setStationsLoading(true);
+        setStationsError(null);
+        // debug: token presence
+        console.log('🔎 Loading stations. token present:', !!localStorage.getItem('authToken'));
+        const data = await fetchRelayPoints({ limit: 100 });
+        console.log('🔎 fetchRelayPoints response:', data);
+        // L'API peut retourner {data: [...]} ou un tableau
+        const items = Array.isArray(data) ? data : (data.data || data.items || []);
+        setStations(items);
+        if (!items || items.length === 0) {
+          setStationsError('Aucun point trouvé');
+        }
+      } catch (err) {
+        console.warn('Erreur chargement stations:', err);
+        setStations([]);
+        setStationsError(err.message || 'Erreur chargement points');
+
+        // DEBUG FALLBACK: tenter un fetch non-authentifié vers l'endpoint public pour vérifier si la ressource est accessible
+        try {
+          fetch('https://yes-karangue-api-production.up.railway.app/api/v1/admin/relay-points?limit=100')
+            .then((r) => {
+              console.log('Fallback raw response status:', r.status);
+              return r.json().catch(() => null);
+            })
+            .then((publicData) => {
+              console.log('Fallback public fetch data:', publicData);
+              const items2 = publicData ? (Array.isArray(publicData) ? publicData : (publicData.data || publicData.items || [])) : [];
+              if (items2 && items2.length > 0) {
+                setStations(items2);
+                setStationsError('Chargé via fallback non authentifié — vérifiez l\'authentification');
+              }
+            })
+            .catch((fallbackErr) => console.warn('Fallback fetch failed:', fallbackErr));
+        } catch (fallbackErr) {
+          console.warn('Fallback fetch threw:', fallbackErr);
+        }
+      } finally {
+        setStationsLoading(false);
+      }
+    };
+
+    loadStations();
+  }, []);
 
   const handleFileChange = (e) => {
     const { name, files: selectedFiles } = e.target;
@@ -199,6 +262,31 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
                   <option value="camion">Camion</option>
                   <option value="fourgon">Fourgon</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Point / Station *</label>
+                <select
+                  name="station_id"
+                  value={formData.station_id}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:outline-none"
+                >
+                  {stationsLoading ? (
+                    <option value="" disabled>Chargement des points...</option>
+                  ) : stations.length === 0 ? (
+                    <option value="" disabled>Aucun point disponible</option>
+                  ) : (
+                    <>
+                      <option value="">Sélectionner un point...</option>
+                      {stations.map((s) => (
+                        <option key={s.id} value={s.id}>{s.name || s.title || `#${s.id}`}</option>
+                      ))}
+                    </>
+                  )}
+                </select>
+                {errors.station_id && <p className="text-red-500 text-xs mt-1">{errors.station_id}</p>}
+                {stationsError && <p className="text-red-500 text-xs mt-1">{stationsError}</p>}
               </div>
 
               <div>
