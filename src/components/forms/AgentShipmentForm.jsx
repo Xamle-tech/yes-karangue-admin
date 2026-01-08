@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X, User, MapPin, Package as PackageIcon, Truck, Upload as UploadIcon, Search } from 'lucide-react';
+import { X, Upload, Search, Check, User, MapPin, Package, Truck, ArrowLeft } from 'lucide-react';
 import { fetchTransporters } from '../../services/transporterService';
 
-const ID_TYPES = ['CNI', 'Passeport', 'Carte consulaire'];
-
-export default function AgentShipmentForm({ onSubmit, onClose }) {
+export default function ShipmentForm({ shipment, onSubmit, onClose }) {
   const [formData, setFormData] = useState({
     // Expéditeur
     sender_first_name: '',
@@ -13,8 +11,6 @@ export default function AgentShipmentForm({ onSubmit, onClose }) {
     sender_address: '',
     sender_id_type: 'CNI',
     sender_id_number: '',
-    sender_id_front: null,
-    sender_id_back: null,
 
     // Destinataire
     recipient_first_name: '',
@@ -22,52 +18,52 @@ export default function AgentShipmentForm({ onSubmit, onClose }) {
     recipient_phone: '',
     recipient_address: '',
 
-    // Détails du colis
-    content_description: '',
-    weight_kg: '',
-    stamp_fee_fcfa: '',
-    package_photo: null,
+    // Colis
+    description: '',
+    weight: '',
+    stamp_fee: '',
 
     // Transporteur
     transporter_id: '',
   });
 
-  const [errors, setErrors] = useState({});
-  const [previews, setPreviews] = useState({
+  const [files, setFiles] = useState({
     sender_id_front: null,
     sender_id_back: null,
     package_photo: null,
   });
+
+  const [errors, setErrors] = useState({});
   const [transporters, setTransporters] = useState([]);
   const [loadingTransporters, setLoadingTransporters] = useState(false);
+  const [transporterSearch, setTransporterSearch] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Charger les transporteurs
   useEffect(() => {
     const loadTransporters = async () => {
       try {
         setLoadingTransporters(true);
-        // Utiliser la limite de 200 comme demandé
-        const response = await fetchTransporters({ limit: 200, offset: 0 });
-        const transportersList = Array.isArray(response) ? response : (response.data || []);
-        setTransporters(transportersList);
-      } catch (error) {
-        console.error('Erreur lors du chargement des transporteurs:', error);
+        const data = await fetchTransporters({ limit: 100 });
+        const items = Array.isArray(data) ? data : (data.data || []);
+        setTransporters(items);
+      } catch (err) {
+        console.error('Erreur chargement transporteurs:', err);
       } finally {
         setLoadingTransporters(false);
       }
     };
-
     loadTransporters();
   }, []);
 
+  // Validation
   const validateForm = () => {
     const newErrors = {};
-
     // Expéditeur
     if (!formData.sender_first_name) newErrors.sender_first_name = 'Prénom requis';
     if (!formData.sender_last_name) newErrors.sender_last_name = 'Nom requis';
     if (!formData.sender_phone) newErrors.sender_phone = 'Téléphone requis';
     if (!formData.sender_address) newErrors.sender_address = 'Adresse requise';
-    if (!formData.sender_id_type) newErrors.sender_id_type = 'Type de pièce requis';
     if (!formData.sender_id_number) newErrors.sender_id_number = 'Numéro d\'identité requis';
 
     // Destinataire
@@ -76,48 +72,40 @@ export default function AgentShipmentForm({ onSubmit, onClose }) {
     if (!formData.recipient_phone) newErrors.recipient_phone = 'Téléphone requis';
     if (!formData.recipient_address) newErrors.recipient_address = 'Adresse requise';
 
-    // Détails du colis
-    if (!formData.content_description) newErrors.content_description = 'Description requise';
-    if (!formData.weight_kg || formData.weight_kg <= 0) newErrors.weight_kg = 'Poids invalide';
-    if (!formData.stamp_fee_fcfa || formData.stamp_fee_fcfa <= 0) newErrors.stamp_fee_fcfa = 'Frais de timbre requis';
+    // Colis
+    if (!formData.description) newErrors.description = 'Description requise';
+    if (!formData.weight) newErrors.weight = 'Poids requis';
+    if (!formData.stamp_fee) newErrors.stamp_fee = 'Frais de timbre requis';
 
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validateForm();
-
-    if (Object.keys(newErrors).length === 0) {
-      // Créer un FormData pour envoyer les fichiers
-      const submitData = new FormData();
-
-      // Concaténer les noms pour l'API
-      const sender_full_name = `${formData.sender_first_name} ${formData.sender_last_name}`.trim();
-      const recipient_full_name = `${formData.recipient_first_name} ${formData.recipient_last_name}`.trim();
-
-      // Ajouter les champs requis par l'API
-      submitData.append('sender_full_name', sender_full_name);
-      submitData.append('sender_phone', formData.sender_phone);
-      submitData.append('sender_address', formData.sender_address);
-      if (formData.sender_id_type) submitData.append('sender_id_type', formData.sender_id_type);
-      if (formData.sender_id_number) submitData.append('sender_id_number', formData.sender_id_number);
-      if (formData.sender_id_front) submitData.append('sender_id_front', formData.sender_id_front);
-      if (formData.sender_id_back) submitData.append('sender_id_back', formData.sender_id_back);
-
-      submitData.append('recipient_full_name', recipient_full_name);
-      submitData.append('recipient_phone', formData.recipient_phone);
-      submitData.append('recipient_address', formData.recipient_address);
-
-      submitData.append('content_description', formData.content_description);
-      submitData.append('weight_kg', formData.weight_kg);
-      if (formData.stamp_fee_fcfa) submitData.append('stamp_fee_fcfa', formData.stamp_fee_fcfa);
-      if (formData.package_photo) submitData.append('package_photo', formData.package_photo);
-      if (formData.transporter_id) submitData.append('transporter_id', formData.transporter_id);
-
-      onSubmit(submitData);
-    } else {
+    if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      // Scroll to top or first error
+      const firstError = document.querySelector('.border-red-500');
+      if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const submissionData = {
+        ...formData,
+        sender_full_name: `${formData.sender_first_name} ${formData.sender_last_name}`,
+        recipient_full_name: `${formData.recipient_first_name} ${formData.recipient_last_name}`,
+        ...files
+      };
+
+      await onSubmit(submissionData);
+    } catch (error) {
+      console.error(error);
+      setErrors({ submit: error.message });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -126,9 +114,9 @@ export default function AgentShipmentForm({ onSubmit, onClose }) {
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
+        const newErr = { ...prev };
+        delete newErr[name];
+        return newErr;
       });
     }
   };
@@ -136,496 +124,420 @@ export default function AgentShipmentForm({ onSubmit, onClose }) {
   const handleFileChange = (e, fieldName) => {
     const file = e.target.files?.[0];
     if (file) {
-      setFormData(prev => ({ ...prev, [fieldName]: file }));
-
-      // Créer une preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviews(prev => ({ ...prev, [fieldName]: reader.result }));
-      };
-      reader.readAsDataURL(file);
+      setFiles(prev => ({ ...prev, [fieldName]: file }));
     }
   };
 
+  const filteredTransporters = transporters.filter(t =>
+    (t.name || '').toLowerCase().includes(transporterSearch.toLowerCase()) ||
+    (t.phone || '').includes(transporterSearch)
+  );
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between px-8 py-6 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#5B9BAD] rounded-lg flex items-center justify-center">
-              <PackageIcon className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 text-xs text-gray-600 mb-0.5">
-                <span>Gestion des Colis</span>
-                <span>›</span>
-                <span>Enregistrer un nouveau colis</span>
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">Enregistrer un nouveau colis</h2>
-            </div>
+    <div className="fixed inset-0 bg-gray-50 z-50 overflow-y-auto flex flex-col">
+      {/* Header Full Width */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+        <div className="flex items-center gap-4">
+          <button onClick={onClose} className="bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition">
+            <ArrowLeft className="h-5 w-5 text-gray-600" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Ajouter un colis</h1>
+            <p className="text-sm text-gray-500">Colis {'>'} Ajouter un colis</p>
           </div>
+        </div>
+        <div className="flex items-center gap-3">
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 hover:bg-gray-200 rounded-lg transition"
+            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition hidden md:block"
           >
-            <X className="h-5 w-5 text-gray-600" />
+            Annuler
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="px-6 py-2 bg-[#E8B44D] text-white rounded-lg font-medium hover:bg-[#D9A53C] transition shadow-sm disabled:opacity-70 flex items-center justify-center min-w-[160px]"
+          >
+            {isSubmitting ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Enregistrement...
+              </>
+            ) : 'Enregistrer le colis'}
           </button>
         </div>
+      </div>
 
-        {/* Form Content - Scrollable */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-          <div className="p-8 space-y-6">
-            {/* EXPÉDITEUR */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <User className="h-5 w-5 text-[#5B9BAD]" />
-                <h3 className="text-base font-semibold text-gray-900">Expéditeur</h3>
-              </div>
+      <div className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full space-y-8 pb-20">
 
-              <div className="grid grid-cols-2 gap-4">
-                {/* Prénom */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Prénom <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="sender_first_name"
-                    value={formData.sender_first_name}
-                    onChange={handleChange}
-                    placeholder="Ex: Abou"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                  />
-                  {errors.sender_first_name && (
-                    <p className="text-red-600 text-xs mt-1">{errors.sender_first_name}</p>
-                  )}
-                </div>
+        {/* Expéditeur */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <User className="h-5 w-5 text-gray-400" />
+            <h2 className="text-lg font-bold text-gray-900">Expéditeur</h2>
+          </div>
 
-                {/* Nom */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nom <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="sender_last_name"
-                    value={formData.sender_last_name}
-                    onChange={handleChange}
-                    placeholder="Ex: Diallo"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                  />
-                  {errors.sender_last_name && (
-                    <p className="text-red-600 text-xs mt-1">{errors.sender_last_name}</p>
-                  )}
-                </div>
-
-                {/* Téléphone */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Téléphone <span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex gap-2">
-                    <div className="flex items-center gap-2 px-3 py-2.5 border border-gray-300 rounded-lg bg-white">
-                      <span className="text-lg">🇸🇳</span>
-                      <span className="text-sm text-gray-700">+221</span>
-                    </div>
-                    <input
-                      type="tel"
-                      name="sender_phone"
-                      value={formData.sender_phone}
-                      onChange={handleChange}
-                      placeholder="77 123 45 67"
-                      className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                    />
-                  </div>
-                  {errors.sender_phone && (
-                    <p className="text-red-600 text-xs mt-1">{errors.sender_phone}</p>
-                  )}
-                </div>
-
-                {/* Adresse */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Adresse de l'expéditeur <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <input
-                      type="text"
-                      name="sender_address"
-                      value={formData.sender_address}
-                      onChange={handleChange}
-                      placeholder="Ex: Dakar, Point E"
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                    />
-                  </div>
-                  {errors.sender_address && (
-                    <p className="text-red-600 text-xs mt-1">{errors.sender_address}</p>
-                  )}
-                </div>
-
-                {/* Type de pièce */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Type de pièce <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="sender_id_type"
-                    value={formData.sender_id_type}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition bg-white text-sm"
-                  >
-                    {ID_TYPES.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                  {errors.sender_id_type && (
-                    <p className="text-red-600 text-xs mt-1">{errors.sender_id_type}</p>
-                  )}
-                </div>
-
-                {/* Numéro d'identité */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Numéro d'identité <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="sender_id_number"
-                    value={formData.sender_id_number}
-                    onChange={handleChange}
-                    placeholder="1 904 1999 00516"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                  />
-                  {errors.sender_id_number && (
-                    <p className="text-red-600 text-xs mt-1">{errors.sender_id_number}</p>
-                  )}
-                </div>
-
-                {/* CNI recto */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">CNI recto</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
-                    {previews.sender_id_front ? (
-                      <div className="relative">
-                        <img src={previews.sender_id_front} alt="CNI recto" className="w-full h-24 object-cover rounded" />
-                      </div>
-                    ) : (
-                      <label className="cursor-pointer block">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleFileChange(e, 'sender_id_front')}
-                          className="hidden"
-                        />
-                        <UploadIcon className="h-6 w-6 text-gray-400 mx-auto mb-2" />
-                        <button
-                          type="button"
-                          className="inline-flex items-center px-3 py-1.5 bg-[#E8B44D] text-white rounded-lg text-xs font-medium hover:bg-[#D9A53C] transition"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.currentTarget.parentElement.querySelector('input[type="file"]').click();
-                          }}
-                        >
-                          Choisir un fichier
-                        </button>
-                        <span className="text-gray-600 text-xs mx-2">ou glisser-déposer</span>
-                        <p className="text-xs text-gray-500 mt-1">PNG, JPG jusqu'à 5MB</p>
-                      </label>
-                    )}
-                  </div>
-                </div>
-
-                {/* CNI verso */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">CNI verso</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
-                    {previews.sender_id_back ? (
-                      <div className="relative">
-                        <img src={previews.sender_id_back} alt="CNI verso" className="w-full h-24 object-cover rounded" />
-                      </div>
-                    ) : (
-                      <label className="cursor-pointer block">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleFileChange(e, 'sender_id_back')}
-                          className="hidden"
-                        />
-                        <UploadIcon className="h-6 w-6 text-gray-400 mx-auto mb-2" />
-                        <button
-                          type="button"
-                          className="inline-flex items-center px-3 py-1.5 bg-[#E8B44D] text-white rounded-lg text-xs font-medium hover:bg-[#D9A53C] transition"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.currentTarget.parentElement.querySelector('input[type="file"]').click();
-                          }}
-                        >
-                          Choisir un fichier
-                        </button>
-                        <span className="text-gray-600 text-xs mx-2">ou glisser-déposer</span>
-                        <p className="text-xs text-gray-500 mt-1">PNG, JPG jusqu'à 5MB</p>
-                      </label>
-                    )}
-                  </div>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
+              <input
+                type="text"
+                name="sender_first_name"
+                value={formData.sender_first_name}
+                onChange={handleChange}
+                placeholder="Ex: Abou"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:border-[#E8B44D] transition outline-none ${errors.sender_first_name ? 'border-red-500' : 'border-gray-300'}`}
+              />
+              {errors.sender_first_name && <p className="text-red-500 text-xs mt-1">{errors.sender_first_name}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+              <input
+                type="text"
+                name="sender_last_name"
+                value={formData.sender_last_name}
+                onChange={handleChange}
+                placeholder="Ex: Diallo"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:border-[#E8B44D] transition outline-none ${errors.sender_last_name ? 'border-red-500' : 'border-gray-300'}`}
+              />
+              {errors.sender_last_name && <p className="text-red-500 text-xs mt-1">{errors.sender_last_name}</p>}
             </div>
 
-            {/* DESTINATAIRE */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <MapPin className="h-5 w-5 text-[#5B9BAD]" />
-                <h3 className="text-base font-semibold text-gray-900">Destinataire</h3>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone *</label>
+              <div className="flex">
+                <div className="bg-gray-50 border border-gray-300 border-r-0 rounded-l-lg px-3 flex items-center gap-2">
+                  <span className="text-lg">🇸🇳</span>
+                  <span className="text-gray-500 text-sm font-medium">+221</span>
+                </div>
+                <input
+                  type="tel"
+                  name="sender_phone"
+                  value={formData.sender_phone}
+                  onChange={handleChange}
+                  placeholder="77 123 45 67"
+                  className={`w-full px-4 py-2.5 border rounded-r-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:border-[#E8B44D] transition outline-none ${errors.sender_phone ? 'border-red-500' : 'border-gray-300'}`}
+                />
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                {/* Prénom */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Prénom <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="recipient_first_name"
-                    value={formData.recipient_first_name}
-                    onChange={handleChange}
-                    placeholder="Ex: Abou"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                  />
-                  {errors.recipient_first_name && (
-                    <p className="text-red-600 text-xs mt-1">{errors.recipient_first_name}</p>
-                  )}
-                </div>
-
-                {/* Nom */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nom <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="recipient_last_name"
-                    value={formData.recipient_last_name}
-                    onChange={handleChange}
-                    placeholder="Ex: Diallo"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                  />
-                  {errors.recipient_last_name && (
-                    <p className="text-red-600 text-xs mt-1">{errors.recipient_last_name}</p>
-                  )}
-                </div>
-
-                {/* Téléphone */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Téléphone <span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex gap-2">
-                    <div className="flex items-center gap-2 px-3 py-2.5 border border-gray-300 rounded-lg bg-white">
-                      <span className="text-lg">🇸🇳</span>
-                      <span className="text-sm text-gray-700">+221</span>
-                    </div>
-                    <input
-                      type="tel"
-                      name="recipient_phone"
-                      value={formData.recipient_phone}
-                      onChange={handleChange}
-                      placeholder="77 123 45 67"
-                      className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                    />
-                  </div>
-                  {errors.recipient_phone && (
-                    <p className="text-red-600 text-xs mt-1">{errors.recipient_phone}</p>
-                  )}
-                </div>
-
-                {/* Adresse */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Adresse du destinataire <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <input
-                      type="text"
-                      name="recipient_address"
-                      value={formData.recipient_address}
-                      onChange={handleChange}
-                      placeholder="Ex: Dakar, Point E"
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                    />
-                  </div>
-                  {errors.recipient_address && (
-                    <p className="text-red-600 text-xs mt-1">{errors.recipient_address}</p>
-                  )}
-                </div>
-              </div>
+              {errors.sender_phone && <p className="text-red-500 text-xs mt-1">{errors.sender_phone}</p>}
             </div>
 
-            {/* DÉTAILS DU COLIS */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <PackageIcon className="h-5 w-5 text-[#5B9BAD]" />
-                <h3 className="text-base font-semibold text-gray-900">Détails du Colis</h3>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Adresse de l'expéditeur *</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  name="sender_address"
+                  value={formData.sender_address}
+                  onChange={handleChange}
+                  placeholder="Ex: Dakar, Point E"
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:border-[#E8B44D] transition outline-none ${errors.sender_address ? 'border-red-500' : 'border-gray-300'}`}
+                />
               </div>
-
-              <div className="space-y-4">
-                {/* Description */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description du contenu <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="content_description"
-                    value={formData.content_description}
-                    onChange={handleChange}
-                    placeholder="Ex: Colis électronique"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                  />
-                  {errors.content_description && (
-                    <p className="text-red-600 text-xs mt-1">{errors.content_description}</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Poids */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Poids (kg) <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="weight_kg"
-                      value={formData.weight_kg}
-                      onChange={handleChange}
-                      placeholder="Ex: 25"
-                      step="0.1"
-                      min="0"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                    />
-                    {errors.weight_kg && (
-                      <p className="text-red-600 text-xs mt-1">{errors.weight_kg}</p>
-                    )}
-                  </div>
-
-                  {/* Frais de timbre */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Frais de timbre (FCFA) <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="stamp_fee_fcfa"
-                      value={formData.stamp_fee_fcfa}
-                      onChange={handleChange}
-                      placeholder="Ex: 500"
-                      min="0"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                    />
-                    {errors.stamp_fee_fcfa && (
-                      <p className="text-red-600 text-xs mt-1">{errors.stamp_fee_fcfa}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Photo du colis */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Photo du colis</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
-                    {previews.package_photo ? (
-                      <div className="relative">
-                        <img src={previews.package_photo} alt="Colis" className="w-full h-32 object-cover rounded" />
-                      </div>
-                    ) : (
-                      <label className="cursor-pointer block">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleFileChange(e, 'package_photo')}
-                          className="hidden"
-                        />
-                        <UploadIcon className="h-8 w-8 text-gray-400 mx-auto mb-3" />
-                        <button
-                          type="button"
-                          className="inline-flex items-center px-4 py-2 bg-[#E8B44D] text-white rounded-lg text-sm font-medium hover:bg-[#D9A53C] transition"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.currentTarget.parentElement.querySelector('input[type="file"]').click();
-                          }}
-                        >
-                          Choisir un fichier
-                        </button>
-                        <span className="text-gray-600 text-sm mx-2">ou glisser-déposer</span>
-                        <p className="text-xs text-gray-500 mt-2">PNG, JPG jusqu'à 5MB</p>
-                      </label>
-                    )}
-                  </div>
-                </div>
-              </div>
+              {errors.sender_address && <p className="text-red-500 text-xs mt-1">{errors.sender_address}</p>}
             </div>
 
-            {/* SÉLECTION DU TRANSPORTEUR */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <Truck className="h-5 w-5 text-[#5B9BAD]" />
-                <h3 className="text-base font-semibold text-gray-900">Sélection du Transporteur</h3>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Transporteur
-                </label>
-                <div className="relative">
-                  <select
-                    name="transporter_id"
-                    value={formData.transporter_id}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition bg-white text-sm"
-                    disabled={loadingTransporters}
-                  >
-                    <option value="">
-                      {loadingTransporters ? 'Chargement...' : 'Choisir un transporteur'}
-                    </option>
-                    {transporters.map(transporter => (
-                      <option key={transporter.id} value={transporter.id}>
-                        {transporter.name || transporter.company_name} - {transporter.vehicle_type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-4">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1 px-6 py-3 bg-[#5B9BAD] text-white rounded-lg font-semibold hover:bg-[#4A8999] transition shadow-sm text-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            <div className="md:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Type de pièce *</label>
+              <select
+                name="sender_id_type"
+                value={formData.sender_id_type}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:border-[#E8B44D] transition outline-none"
               >
-                {isLoading ? (
-                  <>
-                    <Loader className="h-5 w-5 animate-spin" />
-                    <span>Traitement...</span>
-                  </>
-                ) : (
-                  'Générer la lettre de route'
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isLoading}
-                className="px-8 py-3 border-2 border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition text-sm disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                Annuler
-              </button>
+                <option value="CNI">CNI</option>
+                <option value="PASSPORT">Passeport</option>
+              </select>
+            </div>
+
+            <div className="md:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Numéro d'identité *</label>
+              <input
+                type="text"
+                name="sender_id_number"
+                value={formData.sender_id_number}
+                onChange={handleChange}
+                placeholder="1 904 1999 00516"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:border-[#E8B44D] transition outline-none ${errors.sender_id_number ? 'border-red-500' : 'border-gray-300'}`}
+              />
+              {errors.sender_id_number && <p className="text-red-500 text-xs mt-1">{errors.sender_id_number}</p>}
+            </div>
+
+            {/* CNI Photos */}
+            <div className="md:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">CNI recto</label>
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:bg-gray-50 transition cursor-pointer relative group bg-gray-50/50">
+                <input
+                  type="file"
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                  onChange={(e) => handleFileChange(e, 'sender_id_front')}
+                  accept="image/*"
+                />
+                <div className="text-center">
+                  {files.sender_id_front ? (
+                    <div className="flex flex-col items-center justify-center gap-2 text-green-600 font-medium">
+                      <Check className="h-8 w-8 bg-green-100 p-1.5 rounded-full" />
+                      <span className="text-sm truncate max-w-[200px]">{files.sender_id_front.name}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="w-10 h-10 bg-[#FEF9E8] rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Upload className="h-5 w-5 text-[#E8B44D]" />
+                      </div>
+                      <div className="text-sm font-medium text-[#E8B44D] mb-1">Choisir un fichier</div>
+                      <p className="text-gray-500 text-xs">ou glisser-déposer</p>
+                      <p className="text-gray-400 text-[10px] mt-1">PNG, JPG jusqu'à 5MB</p>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="md:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">CNI verso</label>
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:bg-gray-50 transition cursor-pointer relative group bg-gray-50/50">
+                <input
+                  type="file"
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                  onChange={(e) => handleFileChange(e, 'sender_id_back')}
+                  accept="image/*"
+                />
+                <div className="text-center">
+                  {files.sender_id_back ? (
+                    <div className="flex flex-col items-center justify-center gap-2 text-green-600 font-medium">
+                      <Check className="h-8 w-8 bg-green-100 p-1.5 rounded-full" />
+                      <span className="text-sm truncate max-w-[200px]">{files.sender_id_back.name}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="w-10 h-10 bg-[#FEF9E8] rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Upload className="h-5 w-5 text-[#E8B44D]" />
+                      </div>
+                      <div className="text-sm font-medium text-[#E8B44D] mb-1">Choisir un fichier</div>
+                      <p className="text-gray-500 text-xs">ou glisser-déposer</p>
+                      <p className="text-gray-400 text-[10px] mt-1">PNG, JPG jusqu'à 5MB</p>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </form>
+        </div>
+
+        {/* Destinataire */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <MapPin className="h-5 w-5 text-gray-400" />
+            <h2 className="text-lg font-bold text-gray-900">Destinataire</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
+              <input
+                type="text"
+                name="recipient_first_name"
+                value={formData.recipient_first_name}
+                onChange={handleChange}
+                placeholder="Ex: Abou"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:border-[#E8B44D] transition outline-none ${errors.recipient_first_name ? 'border-red-500' : 'border-gray-300'}`}
+              />
+              {errors.recipient_first_name && <p className="text-red-500 text-xs mt-1">{errors.recipient_first_name}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+              <input
+                type="text"
+                name="recipient_last_name"
+                value={formData.recipient_last_name}
+                onChange={handleChange}
+                placeholder="Ex: Diallo"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:border-[#E8B44D] transition outline-none ${errors.recipient_last_name ? 'border-red-500' : 'border-gray-300'}`}
+              />
+              {errors.recipient_last_name && <p className="text-red-500 text-xs mt-1">{errors.recipient_last_name}</p>}
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone *</label>
+              <div className="flex">
+                <div className="bg-gray-50 border border-gray-300 border-r-0 rounded-l-lg px-3 flex items-center gap-2">
+                  <span className="text-lg">🇸🇳</span>
+                  <span className="text-gray-500 text-sm font-medium">+221</span>
+                </div>
+                <input
+                  type="tel"
+                  name="recipient_phone"
+                  value={formData.recipient_phone}
+                  onChange={handleChange}
+                  placeholder="77 123 45 67"
+                  className={`w-full px-4 py-2.5 border rounded-r-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:border-[#E8B44D] transition outline-none ${errors.recipient_phone ? 'border-red-500' : 'border-gray-300'}`}
+                />
+              </div>
+              {errors.recipient_phone && <p className="text-red-500 text-xs mt-1">{errors.recipient_phone}</p>}
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Adresse du destinataire *</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  name="recipient_address"
+                  value={formData.recipient_address}
+                  onChange={handleChange}
+                  placeholder="Ex: Dakar, Point E"
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:border-[#E8B44D] transition outline-none ${errors.recipient_address ? 'border-red-500' : 'border-gray-300'}`}
+                />
+              </div>
+              {errors.recipient_address && <p className="text-red-500 text-xs mt-1">{errors.recipient_address}</p>}
+            </div>
+          </div>
+        </div>
+
+        {/* Détails du Colis */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <Package className="h-5 w-5 text-gray-400" />
+            <h2 className="text-lg font-bold text-gray-900">Détails du Colis</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description du contenu *</label>
+              <input
+                type="text"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Ex: Colis électronique"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:border-[#E8B44D] transition outline-none ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
+              />
+              {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Poids (kg) *</label>
+              <input
+                type="number"
+                name="weight"
+                value={formData.weight}
+                onChange={handleChange}
+                placeholder="Ex: 25"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:border-[#E8B44D] transition outline-none ${errors.weight ? 'border-red-500' : 'border-gray-300'}`}
+              />
+              {errors.weight && <p className="text-red-500 text-xs mt-1">{errors.weight}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Frais de timbre (FCFA) *</label>
+              <input
+                type="number"
+                name="stamp_fee"
+                value={formData.stamp_fee}
+                onChange={handleChange}
+                placeholder="Ex: 500"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:border-[#E8B44D] transition outline-none ${errors.stamp_fee ? 'border-red-500' : 'border-gray-300'}`}
+              />
+              {errors.stamp_fee && <p className="text-red-500 text-xs mt-1">{errors.stamp_fee}</p>}
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Photo du colis</label>
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:bg-gray-50 transition cursor-pointer relative group bg-gray-50/50">
+                <input
+                  type="file"
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                  onChange={(e) => handleFileChange(e, 'package_photo')}
+                  accept="image/*"
+                />
+                <div className="text-center">
+                  {files.package_photo ? (
+                    <div className="flex flex-col items-center justify-center gap-2 text-green-600 font-medium">
+                      <Check className="h-8 w-8 bg-green-100 p-1.5 rounded-full" />
+                      <span className="text-sm truncate max-w-[200px]">{files.package_photo.name}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="w-10 h-10 bg-[#FEF9E8] rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Upload className="h-5 w-5 text-[#E8B44D]" />
+                      </div>
+                      <div className="text-sm font-medium text-[#E8B44D] mb-1">Choisir un fichier</div>
+                      <p className="text-gray-500 text-xs">ou glisser-déposer</p>
+                      <p className="text-gray-400 text-[10px] mt-1">PNG, JPG jusqu'à 5MB</p>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sélection du Transporteur */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <Truck className="h-5 w-5 text-gray-400" />
+            <h2 className="text-lg font-bold text-gray-900">Sélection du Transporteur</h2>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Transporteur *</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Choisir un transporteur"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:border-[#E8B44D] transition outline-none"
+                value={transporterSearch}
+                onChange={(e) => setTransporterSearch(e.target.value)}
+              />
+            </div>
+
+            {/* Liste des transporteurs filtrés */}
+            {transporterSearch && (
+              <div className="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg bg-white shadow-sm">
+                {loadingTransporters && <div className="p-3 text-sm text-gray-500">Chargement...</div>}
+
+                {!loadingTransporters && filteredTransporters.map(t => (
+                  <div
+                    key={t.id}
+                    className={`p-3 hover:bg-gray-50 cursor-pointer flex justify-between items-center ${formData.transporter_id === t.id ? 'bg-[#FEF9E8] border-l-4 border-[#E8B44D]' : ''}`}
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, transporter_id: t.id }));
+                      setTransporterSearch(t.name);
+                    }}
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">{t.name}</p>
+                      <p className="text-xs text-gray-500">{t.phone}</p>
+                    </div>
+                    {formData.transporter_id === t.id && <Check className="h-5 w-5 text-[#E8B44D]" />}
+                  </div>
+                ))}
+
+                {!loadingTransporters && filteredTransporters.length === 0 && (
+                  <div className="p-3 text-sm text-gray-500">Aucun transporteur trouvé</div>
+                )}
+              </div>
+            )}
+
+            {/* Si un transporteur est sélectionné mais qu'on a effacé la recherche, on peut afficher le transporteur sélectionné ou juste laisser la recherche */}
+            {formData.transporter_id && !transporterSearch && (() => {
+              const selected = transporters.find(t => t.id === formData.transporter_id);
+              return selected ? (
+                <div className="mt-2 p-3 bg-blue-50 text-blue-800 rounded-lg flex justify-between items-center">
+                  <span className="font-medium">Transporteur sélectionné : {selected.name}</span>
+                  <button onClick={() => setFormData(prev => ({ ...prev, transporter_id: '' }))} className="text-blue-600 hover:text-blue-800"><X className="h-4 w-4" /></button>
+                </div>
+              ) : null;
+            })()}
+          </div>
+        </div>
+
       </div>
     </div>
   );
