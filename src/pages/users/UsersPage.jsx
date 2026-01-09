@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Eye, Edit2, Trash2, MapPin, ChevronDown, LayoutGrid, List as ListIcon, Mail } from 'lucide-react';
 import UserForm from '../../components/forms/UserForm';
+import UserDetails from '../../components/UserDetails';
 import Toast from '../../components/Toast';
 import SuccessModal from '../../components/modals/SuccessModal';
 import ConfirmationModal from '../../components/modals/ConfirmationModal';
@@ -12,6 +13,7 @@ export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [viewingUser, setViewingUser] = useState(null);
   const [filterRole, setFilterRole] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterRelayPoint, setFilterRelayPoint] = useState('');
@@ -158,328 +160,350 @@ export default function UsersPage() {
   const clientsCount = users.filter((u) => u.role?.toLowerCase() === 'client').length;
   const pointsCount = users.filter((u) => u.relay_point_id).length;
 
-  if (showForm) {
-    return (
-      <UserForm
-        user={editingUser}
-        onSubmit={handleAddUser}
-        onCancel={() => {
-          setShowForm(false);
-          setEditingUser(null);
-        }}
-      />
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Utilisateurs & Points</h1>
-          <p className="text-gray-600 mt-1">
-            Gérez les utilisateurs et les points de retrait YES Karangue
-          </p>
-        </div>
-        <button
-          onClick={() => {
+  const renderContent = () => {
+    if (showForm) {
+      return (
+        <UserForm
+          user={editingUser}
+          onSubmit={handleAddUser}
+          onCancel={() => {
+            setShowForm(false);
             setEditingUser(null);
+          }}
+        />
+      );
+    }
+
+    if (viewingUser) {
+      return (
+        <UserDetails
+          user={viewingUser}
+          onBack={() => setViewingUser(null)}
+          onEdit={(user) => {
+            setViewingUser(null);
+            setEditingUser(user);
             setShowForm(true);
           }}
-          className="flex items-center gap-2 bg-[#E8B44D] text-white px-5 py-2.5 rounded-lg hover:bg-[#D9A53C] transition font-medium shadow-sm"
-        >
-          <Plus className="h-5 w-5" />
-          Ajouter un utilisateur
-        </button>
-      </div>
+          onDelete={(user) => {
+            confirmDeleteUser(user);
+          }}
+        />
+      );
+    }
 
-      {/* Form Modal Replaced by Full Page Toggle above */}
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Utilisateurs & Points</h1>
+            <p className="text-gray-600 mt-1">
+              Gérez les utilisateurs et les points de retrait YES Karangue
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setEditingUser(null);
+              setShowForm(true);
+            }}
+            className="flex items-center gap-2 bg-[#E8B44D] text-white px-5 py-2.5 rounded-lg hover:bg-[#D9A53C] transition font-medium shadow-sm"
+          >
+            <Plus className="h-5 w-5" />
+            Ajouter un utilisateur
+          </button>
+        </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Utilisateurs total */}
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Utilisateurs total</p>
-              <p className="text-3xl font-bold text-gray-900">{users.length}</p>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Utilisateurs total */}
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Utilisateurs total</p>
+                <p className="text-3xl font-bold text-gray-900">{users.length}</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
             </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
+          </div>
+
+          {/* Clients */}
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Clients</p>
+                <p className="text-3xl font-bold text-blue-600">{clientsCount}</p>
+              </div>
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <svg className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Points de retrait */}
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Points de retrait</p>
+                <p className="text-3xl font-bold text-yellow-600">{pointsCount}</p>
+              </div>
+              <div className="bg-yellow-50 p-3 rounded-lg">
+                <MapPin className="h-6 w-6 text-yellow-500" />
+              </div>
+            </div>
+          </div>
+
+          {/* Crédits totaux */}
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Crédits totaux</p>
+                <p className="text-2xl font-bold text-green-600">{totalCredits.toLocaleString()} FCFA</p>
+              </div>
+              <div className="bg-green-50 p-3 rounded-lg">
+                <svg className="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Clients */}
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Clients</p>
-              <p className="text-3xl font-bold text-blue-600">{clientsCount}</p>
+        {/* Search and Filters */}
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex flex-col md:flex-row gap-4 items-center">
+            {/* Search */}
+            <div className="flex-1 w-full relative">
+              <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Rechercher par nom, email ou téléphone..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none"
+              />
             </div>
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <svg className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-          </div>
-        </div>
 
-        {/* Points de retrait */}
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Points de retrait</p>
-              <p className="text-3xl font-bold text-yellow-600">{pointsCount}</p>
-            </div>
-            <div className="bg-yellow-50 p-3 rounded-lg">
-              <MapPin className="h-6 w-6 text-yellow-500" />
-            </div>
-          </div>
-        </div>
-
-        {/* Crédits totaux */}
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Crédits totaux</p>
-              <p className="text-2xl font-bold text-green-600">{totalCredits.toLocaleString()} FCFA</p>
-            </div>
-            <div className="bg-green-50 p-3 rounded-lg">
-              <svg className="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-        <div className="flex flex-col md:flex-row gap-4 items-center">
-          {/* Search */}
-          <div className="flex-1 w-full relative">
-            <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Rechercher par nom, email ou téléphone..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none"
-            />
-          </div>
-
-          {/* Filters */}
-          <div className="flex gap-2">
-            {/* Status Filter */}
-            <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium text-gray-700 bg-white">
-              <span>Tous les statuts</span>
-              <ChevronDown className="h-4 w-4" />
-            </button>
-
-            {/* Role Filter */}
-            <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium text-gray-700 bg-white">
-              <span>Tous les rôles</span>
-              <ChevronDown className="h-4 w-4" />
-            </button>
-
-            {/* View Mode Toggle */}
-            <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2.5 transition ${viewMode === 'grid' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-              >
-                <LayoutGrid className="h-5 w-5" />
+            {/* Filters */}
+            <div className="flex gap-2">
+              {/* Status Filter */}
+              <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium text-gray-700 bg-white">
+                <span>Tous les statuts</span>
+                <ChevronDown className="h-4 w-4" />
               </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2.5 transition ${viewMode === 'list' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-              >
-                <ListIcon className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Users Table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                  Nom
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                  Téléphone
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                  Email
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                  Point / Localisation
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                  Statut
-                </th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredUsers.map((user, index) => (
-                <tr
-                  key={user.id}
-                  className={`hover:bg-gray-50 transition ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
+              {/* Role Filter */}
+              <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium text-gray-700 bg-white">
+                <span>Tous les rôles</span>
+                <ChevronDown className="h-4 w-4" />
+              </button>
+
+              {/* View Mode Toggle */}
+              <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2.5 transition ${viewMode === 'grid' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
+                    }`}
                 >
-                  {/* Nom avec avatar et initiales */}
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <div className={`w-10 h-10 rounded-full ${user.avatarColor} flex items-center justify-center text-white font-semibold text-sm`}>
-                          {user.initials}
-                        </div>
-                        {user.online && (
-                          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900 text-sm">{user.name}</p>
-                        <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${user.roleColor}`}>
-                          {user.role}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Téléphone */}
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {user.phone}
-                  </td>
-
-                  {/* Email */}
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {user.email}
-                  </td>
-
-                  {/* Point / Localisation */}
-                  <td className="px-6 py-4 text-sm">
-                    {user.pointName ? (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <p className="font-medium text-gray-900">{user.pointName}</p>
-                          <p className="text-xs text-gray-500">{user.location}</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-gray-400">N/A</span>
-                    )}
-                  </td>
-
-                  {/* Statut */}
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold ${user.statusColor}`}>
-                      {user.status}
-                    </span>
-                  </td>
-
-                  {/* Actions */}
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-end gap-1">
-                      {/* Renvoyer l'invitation pour les utilisateurs en attente */}
-                      {user.status === 'pending' && (
-                        <button
-                          onClick={() => handleResendInvitation(user.id)}
-                          disabled={resendingId === user.id}
-                          className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Renvoyer l'invitation"
-                        >
-                          {resendingId === user.id ? (
-                            <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
-                          ) : (
-                            <Mail className="h-4 w-4" />
-                          )}
-                        </button>
-                      )}
-                      <button
-                        className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition"
-                        title="Voir"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditingUser(user);
-                          setShowForm(true);
-                        }}
-                        className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition"
-                        title="Modifier"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-
-                      <button
-                        onClick={() => confirmDeleteUser(user)}
-                        className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        <div className="border-t border-gray-200 px-6 py-3">
-          <div className="flex items-center justify-between text-sm text-gray-600">
-            <div>
-              <span className="font-medium">éléments par page: </span>
-              <select className="ml-2 border border-gray-300 rounded px-2 py-1 text-sm">
-                <option>10</option>
-                <option>25</option>
-                <option>50</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-4">
-              <span>1 - 1 sur {filteredUsers.length}</span>
-              <div className="flex gap-1">
-                <button className="p-1.5 hover:bg-gray-100 rounded transition">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
+                  <LayoutGrid className="h-5 w-5" />
                 </button>
-                <button className="p-1.5 hover:bg-gray-100 rounded transition">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2.5 transition ${viewMode === 'list' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                >
+                  <ListIcon className="h-5 w-5" />
                 </button>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Empty State */}
-      {
-        filteredUsers.length === 0 && (
-          <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-            <p className="text-gray-600 font-medium">Aucun utilisateur trouvé</p>
+        {/* Users Table */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    Nom
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    Téléphone
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    Email
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    Point / Localisation
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    Statut
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredUsers.map((user, index) => (
+                  <tr
+                    key={user.id}
+                    className={`hover:bg-gray-50 transition ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
+                  >
+                    {/* Nom avec avatar et initiales */}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <div className={`w-10 h-10 rounded-full ${user.avatarColor} flex items-center justify-center text-white font-semibold text-sm`}>
+                            {user.initials}
+                          </div>
+                          {user.online && (
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900 text-sm">{user.name}</p>
+                          <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${user.roleColor}`}>
+                            {user.role}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Téléphone */}
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {user.phone}
+                    </td>
+
+                    {/* Email */}
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {user.email}
+                    </td>
+
+                    {/* Point / Localisation */}
+                    <td className="px-6 py-4 text-sm">
+                      {user.pointName ? (
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-gray-400" />
+                          <div>
+                            <p className="font-medium text-gray-900">{user.pointName}</p>
+                            <p className="text-xs text-gray-500">{user.location}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">N/A</span>
+                      )}
+                    </td>
+
+                    {/* Statut */}
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold ${user.statusColor}`}>
+                        {user.status}
+                      </span>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-1">
+                        {/* Renvoyer l'invitation pour les utilisateurs en attente */}
+                        {user.status === 'pending' && (
+                          <button
+                            onClick={() => handleResendInvitation(user.id)}
+                            disabled={resendingId === user.id}
+                            className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Renvoyer l'invitation"
+                          >
+                            {resendingId === user.id ? (
+                              <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+                            ) : (
+                              <Mail className="h-4 w-4" />
+                            )}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setViewingUser(user)}
+                          className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition"
+                          title="Voir"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingUser(user);
+                            setShowForm(true);
+                          }}
+                          className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition"
+                          title="Modifier"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+
+                        <button
+                          onClick={() => confirmDeleteUser(user)}
+                          className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )
-      }
 
+          {/* Pagination */}
+          <div className="border-t border-gray-200 px-6 py-3">
+            <div className="flex items-center justify-between text-sm text-gray-600">
+              <div>
+                <span className="font-medium">éléments par page: </span>
+                <select className="ml-2 border border-gray-300 rounded px-2 py-1 text-sm">
+                  <option>10</option>
+                  <option>25</option>
+                  <option>50</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-4">
+                <span>1 - 1 sur {filteredUsers.length}</span>
+                <div className="flex gap-1">
+                  <button className="p-1.5 hover:bg-gray-100 rounded transition">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <button className="p-1.5 hover:bg-gray-100 rounded transition">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
+        {/* Empty State */}
+        {
+          filteredUsers.length === 0 && (
+            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+              <p className="text-gray-600 font-medium">Aucun utilisateur trouvé</p>
+            </div>
+          )
+        }
+      </div>
+    );
+  };
+
+  return (
+    <>
+      {renderContent()}
 
       {/* Success Modal */}
       {
@@ -490,8 +514,6 @@ export default function UsersPage() {
           />
         )
       }
-
-
 
       {/* Delete Confirmation Modal */}
       {
@@ -507,7 +529,6 @@ export default function UsersPage() {
           />
         )
       }
-
-    </div >
+    </>
   );
 }
