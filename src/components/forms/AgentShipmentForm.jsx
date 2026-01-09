@@ -134,7 +134,7 @@ export default function ShipmentForm({ shipment, onSubmit, onClose }) {
   );
 
   return (
-    <div className="fixed inset-0 bg-gray-50 z-50 overflow-y-auto flex flex-col">
+    <div className="fixed inset-0 bg-gray-50 z-50 overflow-hidden flex flex-col">
       {/* Header Full Width */}
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
         <div className="flex items-center gap-4">
@@ -142,37 +142,14 @@ export default function ShipmentForm({ shipment, onSubmit, onClose }) {
             <ArrowLeft className="h-5 w-5 text-gray-600" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Ajouter un colis</h1>
-            <p className="text-sm text-gray-500">Colis {'>'} Ajouter un colis</p>
+            <h1 className="text-2xl font-bold text-gray-900">Enregistrer un nouveau colis</h1>
+            <p className="text-sm text-gray-500">Gestion des Colis {'>'} Enregistrer un nouveau colis</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition hidden md:block"
-          >
-            Annuler
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="px-6 py-2 bg-[#E8B44D] text-white rounded-lg font-medium hover:bg-[#D9A53C] transition shadow-sm disabled:opacity-70 flex items-center justify-center min-w-[160px]"
-          >
-            {isSubmitting ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Enregistrement...
-              </>
-            ) : 'Enregistrer le colis'}
-          </button>
-        </div>
+
       </div>
 
-      <div className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full space-y-8 pb-20">
+      <div className="flex-1 overflow-y-auto p-6 md:p-8 max-w-7xl mx-auto w-full space-y-8 pb-20">
 
         {/* Expéditeur */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -538,6 +515,32 @@ export default function ShipmentForm({ shipment, onSubmit, onClose }) {
           </div>
         </div>
 
+      </div>
+
+      {/* Footer Actions */}
+      <div className="bg-[#1F2937] px-6 py-4 flex items-center gap-4 border-t border-gray-700 shrink-0">
+        <button
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className="px-6 py-2.5 bg-[#0D9488] text-white rounded-lg font-medium hover:bg-[#0F766E] transition shadow-sm disabled:opacity-70 flex items-center justify-center min-w-[160px]"
+        >
+          {isSubmitting ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Génération...
+            </>
+          ) : 'Générer la lettre de route'}
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-6 py-2.5 bg-white text-gray-900 rounded-lg font-medium hover:bg-gray-100 transition shadow-sm"
+        >
+          Annuler
+        </button>
       </div>
     </div>
   );
