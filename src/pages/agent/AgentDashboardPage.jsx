@@ -222,9 +222,18 @@ export default function AgentDashboardPage() {
         <ShipmentSuccessModal
           trackingNumber={createdShipment.tracking_number}
           onClose={() => setShowSuccessModal(false)}
-          onPrint={() => {
-            // Implémentation future pour l'impression
-            console.log('Impression pour:', createdShipment.tracking_number);
+          onPrint={async () => {
+            try {
+              // Importer la fonction si elle n'est pas déjà importée en haut ou dynamiquement
+              const { downloadWaybillPDFByTrackingNumber } = await import('../../services/agentShipmentsService');
+              const pdfBlob = await downloadWaybillPDFByTrackingNumber(createdShipment.tracking_number);
+              const pdfUrl = window.URL.createObjectURL(pdfBlob);
+              window.open(pdfUrl, '_blank');
+              setTimeout(() => window.URL.revokeObjectURL(pdfUrl), 10000);
+            } catch (error) {
+              console.error('Erreur impression:', error);
+              alert('Impossible de récupérer la lettre de route.');
+            }
           }}
         />
       )}
