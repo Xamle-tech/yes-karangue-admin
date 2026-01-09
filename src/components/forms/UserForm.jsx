@@ -1,17 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, User } from 'lucide-react';
-import { fetchTransporters } from '../../services/transporterService'; // Assuming we might need points, but for now just mock or use existing logic if any
-// If we need relay points, we should fetch them. The user mentioned "Point de retrait" which likely corresponds to relay_points not transporters.
-// Let's check if there is a relayPointService. If not, I'll stick to manual options or fetching points if possible. 
-// Assuming fetchRelayPoints exists or I used mock data. Since I don't see relayPointService in previous context, I'll check my memory or assume it's like transporters. 
-// Wait, in previous UsersPage, there was `filterRelayPoint` but no direct fetch visible in the snippet I saw. 
-// Ah, `UserForm` had a text input for ID. The design shows a select "Sélectionner".
-// I will try to fetch relay points if I can, or leave it as a select with placeholder if I don't have the service yet.
-// Actually, looking at `transporterService`, maybe `relayPointService` exists? 
-// I'll assume for now I should use a Select but maybe I need to fetch them.
-// Given strict instructions not to assume too much, I will keep the existing text input logic OR upgrade it if I find the service.
-// Actually, the user request #1 image shows "Point de retrait" as a Select box "Sélectionner". containing "Point Dakar Centre".
-// I will implement the UI as requested.
+import { fetchRelayPoints } from '../../services/relayPointService';
 
 export default function UserForm({ user, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -20,26 +9,36 @@ export default function UserForm({ user, onSubmit, onCancel }) {
     email: user?.email || '',
     phone: user?.phone || '',
     relay_point_id: user?.relay_point_id || '',
-    // Address/Location not explicitly detailed in payload but present in table.
   });
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [relayPoints, setRelayPoints] = useState([]);
+  const [loadingPoints, setLoadingPoints] = useState(false);
 
-  // Mocking relay points for now as I haven't seen the service. 
-  // Ideally we should fetch this.
-  const relayPoints = [
-    { id: 'rp_1', name: 'Point Dakar Centre' },
-    { id: 'rp_2', name: 'Point Mermoz' },
-    // Add more if needed or fetch real ones
-  ];
+  useEffect(() => {
+    const loadRelayPoints = async () => {
+      try {
+        setLoadingPoints(true);
+        const response = await fetchRelayPoints({ limit: 100 }); // Fetch enough points
+        // Handle pagination or data wrappers
+        const points = Array.isArray(response) ? response : (response.data || []);
+        setRelayPoints(points);
+      } catch (error) {
+        console.error('Erreur chargement points:', error);
+      } finally {
+        setLoadingPoints(false);
+      }
+    };
+    loadRelayPoints();
+  }, []);
 
   const roleOptions = [
-    { value: 'client', label: 'Client' },
-    { value: 'agent', label: 'Agent' },
-    { value: 'admin', label: 'Administrateur' },
-    { value: 'carrier', label: 'Transporteur' },
-    { value: 'manager', label: 'Manager' },
+    { value: 'CLIENT', label: 'Client' },
+    { value: 'AGENT', label: 'Agent' },
+    { value: 'ADMIN', label: 'Administrateur' },
+    { value: 'CARRIER', label: 'Transporteur' },
+    { value: 'MANAGER', label: 'Manager' },
   ];
 
   const validateForm = () => {
@@ -80,7 +79,11 @@ export default function UserForm({ user, onSubmit, onCancel }) {
 
     setIsSubmitting(true);
     try {
-      await onSubmit(formData);
+      const payload = {
+        ...formData,
+        relay_point_id: formData.relay_point_id ? parseInt(formData.relay_point_id, 10) : null
+      };
+      await onSubmit(payload);
     } catch (error) {
       setErrors({ submit: error.message || 'Une erreur est survenue' });
     } finally {

@@ -87,8 +87,24 @@ export const createUser = async (userData) => {
             body: JSON.stringify(userData),
         });
 
+
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
+
+            // Check for validation errors with details
+            if (response.status === 422 && errorData.error?.details?.fields) {
+                const fields = errorData.error.details.fields;
+                // Get the first error message from the first field
+                const firstField = Object.keys(fields)[0];
+                const firstErrorMessage = fields[firstField][0];
+                throw new Error(firstErrorMessage || errorData.error.message || 'Données invalides');
+            }
+
+            // Check for general error message structure
+            if (errorData.error?.message) {
+                throw new Error(errorData.error.message);
+            }
+
             throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
         }
 
