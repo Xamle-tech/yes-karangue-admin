@@ -329,6 +329,30 @@ export const downloadWaybillPDF = async (shipmentId) => {
         throw error;
     }
 };
+
+export const receiveAgentShipmentByTrackingNumber = async (trackingNumber) => {
+    try {
+        const url = buildUrl(`/api/v1/agent/shipments/${trackingNumber}/receive`);
+
+        const response = await authorizedFetch(url, {
+            method: 'POST',
+            headers: getDefaultHeaders(),
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('Colis non trouvé');
+            }
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Erreur lors de la réception du colis:', error);
+        throw error;
+    }
+};
 export const downloadWaybillPDFByTrackingNumber = async (trackingNumber) => {
     try {
         const url = buildUrl(`/api/v1/agent/shipments/${trackingNumber}/waybill.pdf`);
