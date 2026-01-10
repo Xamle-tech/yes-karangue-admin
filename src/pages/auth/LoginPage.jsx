@@ -29,7 +29,7 @@ export default function LoginPage() {
       const data = await login(email, password);
 
       // Sauvegarder les données de session
-      saveAuthData(data);
+      saveAuthData(data, rememberMe);
 
       // Déterminer la redirection
       const userRole = data.role;

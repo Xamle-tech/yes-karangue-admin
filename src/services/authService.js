@@ -5,6 +5,26 @@
 
 import { API_BASE_URL, AUTH_ENDPOINTS, buildUrl, getDefaultHeaders } from '../config/api';
 
+// Helpers pour gérer le stockage (localStorage vs sessionStorage)
+const getStorageItem = (key) => {
+    return localStorage.getItem(key) || sessionStorage.getItem(key);
+};
+
+const setStorageItem = (key, value, remember = true) => {
+    if (remember) {
+        localStorage.setItem(key, value);
+        sessionStorage.removeItem(key);
+    } else {
+        sessionStorage.setItem(key, value);
+        localStorage.removeItem(key);
+    }
+};
+
+const removeStorageItem = (key) => {
+    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
+};
+
 /**
  * Connexion d'un utilisateur (Agent ou Admin)
  * @param {string} email - L'email de l'utilisateur
@@ -73,7 +93,7 @@ export const login = async (email, password) => {
  */
 export const refreshToken = async () => {
     try {
-        const token = localStorage.getItem('authToken');
+        const token = getStorageItem('authToken');
         const headers = {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
@@ -98,7 +118,9 @@ export const refreshToken = async () => {
         const data = await response.json();
 
         if (data.access_token) {
-            localStorage.setItem('authToken', data.access_token);
+            // Déterminer où sauvegarder le nouveau token (si localStorage a l'ancien, on remet dans localStorage, sinon sessionStorage)
+            const isPersistent = localStorage.getItem('authToken') !== null;
+            setStorageItem('authToken', data.access_token, isPersistent);
             return data.access_token;
         }
 
@@ -119,7 +141,7 @@ export const refreshToken = async () => {
  */
 export const fetchCurrentUser = async () => {
     try {
-        const token = localStorage.getItem('authToken');
+        const token = getStorageItem('authToken');
         console.log('Fetching current user with token:', token ? 'Present' : 'Missing');
 
         const response = await fetch(buildUrl(AUTH_ENDPOINTS.ME), {
@@ -144,7 +166,8 @@ export const fetchCurrentUser = async () => {
                     if (retryResponse.ok) {
                         const data = await retryResponse.json();
                         if (data) {
-                            localStorage.setItem('userData', JSON.stringify(data));
+                            const isPersistent = localStorage.getItem('authToken') !== null;
+                            setStorageItem('userData', JSON.stringify(data), isPersistent);
                         }
                         return data;
                     }
@@ -160,7 +183,8 @@ export const fetchCurrentUser = async () => {
 
         const data = await response.json();
         if (data) {
-            localStorage.setItem('userData', JSON.stringify(data));
+            const isPersistent = localStorage.getItem('authToken') !== null;
+            setStorageItem('userData', JSON.stringify(data), isPersistent);
         }
         return data;
     } catch (error) {
@@ -170,34 +194,35 @@ export const fetchCurrentUser = async () => {
 };
 
 /**
- * Sauvegarde les données de session dans le localStorage
+ * Sauvegarde les données de session dans le localStorage ou sessionStorage
  * @param {Object} authData - Les données d'authentification
+ * @param {boolean} rememberMe - Se souvenir de moi (si true -> localStorage, sinon -> sessionStorage)
  */
-export const saveAuthData = (authData) => {
+export const saveAuthData = (authData, rememberMe = true) => {
     try {
         // Sauvegarder le token
         if (authData.access_token) {
-            localStorage.setItem('authToken', authData.access_token);
+            setStorageItem('authToken', authData.access_token, rememberMe);
         }
 
         // Sauvegarder le rôle
         if (authData.role) {
-            localStorage.setItem('userRole', authData.role);
+            setStorageItem('userRole', authData.role, rememberMe);
         }
 
         // Sauvegarder les données utilisateur
         if (authData.user) {
-            localStorage.setItem('userData', JSON.stringify(authData.user));
+            setStorageItem('userData', JSON.stringify(authData.user), rememberMe);
 
             // Sauvegarder l'email si disponible
             if (authData.user.email || authData.user.login) {
-                localStorage.setItem('userEmail', authData.user.email || authData.user.login);
+                setStorageItem('userEmail', authData.user.email || authData.user.login, rememberMe);
             }
         }
 
         // Sauvegarder le nom de l'entreprise si disponible
         if (authData.entrepriseName) {
-            localStorage.setItem('entrepriseName', authData.entrepriseName);
+            setStorageItem('entrepriseName', authData.entrepriseName, rememberMe);
         }
     } catch (error) {
         console.error('Erreur lors de la sauvegarde des données d\'authentification:', error);
@@ -205,15 +230,15 @@ export const saveAuthData = (authData) => {
 };
 
 /**
- * Récupère les données de l'utilisateur connecté depuis le localStorage
+ * Récupère les données de l'utilisateur connecté depuis le storage
  * @returns {Object|null} Les données de l'utilisateur ou null
  */
 export const getAuthData = () => {
     try {
-        const token = localStorage.getItem('authToken');
-        const role = localStorage.getItem('userRole');
-        const userDataStr = localStorage.getItem('userData');
-        const entrepriseName = localStorage.getItem('entrepriseName');
+        const token = getStorageItem('authToken');
+        const role = getStorageItem('userRole');
+        const userDataStr = getStorageItem('userData');
+        const entrepriseName = getStorageItem('entrepriseName');
 
         if (!token || !role) {
             return null;
@@ -266,7 +291,7 @@ export const hasRole = (role) => {
 export const logout = async () => {
     try {
         // Tentative de déconnexion côté serveur
-        const token = localStorage.getItem('authToken');
+        const token = getStorageItem('authToken');
         if (token) {
             await fetch(buildUrl(AUTH_ENDPOINTS.LOGOUT), {
                 method: 'POST',
@@ -277,11 +302,11 @@ export const logout = async () => {
         console.error('Erreur lors de la déconnexion API:', error);
     } finally {
         // Supprimer toutes les données de session localement dans tous les cas
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userData');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('entrepriseName');
+        removeStorageItem('authToken');
+        removeStorageItem('userRole');
+        removeStorageItem('userData');
+        removeStorageItem('userEmail');
+        removeStorageItem('entrepriseName');
 
         // Rediriger vers la page de connexion
         window.location.href = '/';
@@ -293,7 +318,7 @@ export const logout = async () => {
  * @returns {string|null} Le token ou null
  */
 export const getAuthToken = () => {
-    return localStorage.getItem('authToken');
+    return getStorageItem('authToken');
 };
 
 /**
