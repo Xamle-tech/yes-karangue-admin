@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import {
   LayoutDashboard,
   Package,
@@ -11,10 +12,12 @@ import {
   MapPin,
 } from 'lucide-react';
 import logo from '../icons/logo.png';
+import ConfirmationModal from './modals/ConfirmationModal';
 
 export default function Sidebar({ collapsed }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Récupérer le rôle de l'utilisateur
   const userRole = localStorage.getItem('userRole') || 'admin';
@@ -41,12 +44,14 @@ export default function Sidebar({ collapsed }) {
 
   const isActive = (path) => location.pathname === path;
 
-  const handleLogout = () => {
-    if (confirm('Êtes-vous sûr de vouloir vous déconnecter?')) {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userRole');
-      window.location.href = '/login';
-    }
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userRole');
+    window.location.href = '/login';
   };
 
   return (
@@ -93,7 +98,7 @@ export default function Sidebar({ collapsed }) {
       {/* Logout Button */}
       <div className="border-t border-gray-200 p-4">
         <button
-          onClick={handleLogout}
+          onClick={handleLogoutClick}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-all font-medium"
           title="Déconnexion"
         >
@@ -101,6 +106,19 @@ export default function Sidebar({ collapsed }) {
           {!collapsed && <span>Déconnexion</span>}
         </button>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <ConfirmationModal
+          title="Déconnexion"
+          message="Êtes-vous sûr de vouloir vous déconnecter ?"
+          confirmText="Se déconnecter"
+          cancelText="Annuler"
+          onConfirm={confirmLogout}
+          onCancel={() => setShowLogoutModal(false)}
+          isDestructive={true}
+        />
+      )}
     </div>
   );
 }

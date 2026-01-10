@@ -1,6 +1,7 @@
 import { Menu, Bell, User, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { fetchCurrentUser, logout } from '../services/authService';
+import ConfirmationModal from './modals/ConfirmationModal';
 
 export default function Header({
   sidebarOpen,
@@ -11,6 +12,7 @@ export default function Header({
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [userData, setUserData] = useState(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Récupérer le rôle et l'email de l'utilisateur (fallback localStorage)
   const localRole = localStorage.getItem('userRole') || 'admin';
@@ -44,11 +46,15 @@ export default function Header({
       .toUpperCase();
   };
 
-  const handleLogout = async () => {
-    if (confirm('Êtes-vous sûr de vouloir vous déconnecter?')) {
-      await logout();
-      onLogout();
-    }
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+    setShowUserMenu(false); // Close the menu
+  };
+
+  const confirmLogout = async () => {
+    await logout();
+    onLogout();
+    setShowLogoutModal(false);
   };
 
   return (
@@ -161,7 +167,7 @@ export default function Header({
               </div>
               <div className="p-2 border-t border-gray-200">
                 <button
-                  onClick={handleLogout}
+                  onClick={handleLogoutClick}
                   className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded transition font-medium"
                 >
                   <LogOut className="h-4 w-4" />
@@ -172,6 +178,19 @@ export default function Header({
           )}
         </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <ConfirmationModal
+          title="Déconnexion"
+          message="Êtes-vous sûr de vouloir vous déconnecter ?"
+          confirmText="Se déconnecter"
+          cancelText="Annuler"
+          onConfirm={confirmLogout}
+          onCancel={() => setShowLogoutModal(false)}
+          isDestructive={true}
+        />
+      )}
     </header>
   );
 }
