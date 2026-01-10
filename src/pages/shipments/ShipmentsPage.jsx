@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Search, Eye, Download, Printer, Check, Package, LayoutGrid, List as ListIcon, ChevronDown } from 'lucide-react';
 import ShipmentForm from '../../components/forms/ShipmentForm';
 import RouteSheetModal from '../../components/modals/RouteSheetModal';
+import { fetchTransporters } from '../../services/transporterService';
 
 export default function ShipmentsPage() {
   const [shipments, setShipments] = useState([
@@ -39,6 +40,22 @@ export default function ShipmentsPage() {
   const [selectedShipment, setSelectedShipment] = useState(null);
   const [editingShipment, setEditingShipment] = useState(null);
   const [viewMode, setViewMode] = useState('list');
+  const [transporters, setTransporters] = useState([]);
+
+  useEffect(() => {
+    const loadTransporters = async () => {
+      try {
+        const data = await fetchTransporters({ limit: 100 });
+        const items = Array.isArray(data) ? data : (data.data || []);
+        setTransporters(items.filter(t => t.status === 'active'));
+      } catch (err) {
+        console.error("Failed to load transporters", err);
+      }
+    };
+    if (showForm) {
+      loadTransporters();
+    }
+  }, [showForm]);
 
   const filteredShipments = shipments.filter(
     (shipment) =>
@@ -64,6 +81,19 @@ export default function ShipmentsPage() {
     stamp: '01',
   };
 
+  if (showForm) {
+    return (
+      <div className="h-full">
+        <ShipmentForm
+          shipment={editingShipment}
+          transporters={transporters}
+          onSubmit={handleAddShipment}
+          onClose={() => setShowForm(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -83,15 +113,6 @@ export default function ShipmentsPage() {
           Ajouter un colis
         </button>
       </div>
-
-      {/* Form Modal */}
-      {showForm && (
-        <ShipmentForm
-          shipment={editingShipment}
-          onSubmit={handleAddShipment}
-          onClose={() => setShowForm(false)}
-        />
-      )}
 
       {/* Route Sheet Modal */}
       {showRouteSheet && selectedShipment && (
@@ -227,10 +248,10 @@ export default function ShipmentsPage() {
                   <td className="px-6 py-4 text-sm">
                     <span
                       className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-medium ${shipment.status === 'En attente'
-                          ? 'bg-gray-200 text-gray-700'
-                          : shipment.status === 'En transit'
-                            ? 'bg-orange-50 text-orange-600' // Using orange/yellowish for transit based on image
-                            : 'bg-green-100 text-green-800'
+                        ? 'bg-gray-200 text-gray-700'
+                        : shipment.status === 'En transit'
+                          ? 'bg-orange-50 text-orange-600' // Using orange/yellowish for transit based on image
+                          : 'bg-green-100 text-green-800'
                         }`}
                     >
                       {shipment.status}

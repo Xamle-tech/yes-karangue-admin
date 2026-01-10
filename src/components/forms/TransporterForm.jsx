@@ -4,15 +4,16 @@ import { fetchRelayPoints } from '../../services/relayPointService';
 
 export default function TransporterForm({ transporter, onSubmit, onClose }) {
   const [formData, setFormData] = useState({
-    full_name: '',
-    email: '',
-    phone: '',
-    vehicle_type: 'moto',
-    vehicle_plate: '',
-    insurer_name: '',
-    insurance_expires_at: '',
-    station_id: '', // Par défaut vide — choisir un point
-    password: 'password123', // Valeur par défaut requise souvent pour la création user
+    full_name: transporter?.name || '',
+    email: transporter?.email || '',
+    phone: transporter?.phone || '',
+    vehicle_type: transporter?.transporter_profile?.vehicle_type || 'moto',
+    vehicle_plate: transporter?.transporter_profile?.vehicle_plate || '',
+    insurer_name: transporter?.transporter_profile?.insurer_name || '',
+    insurance_expires_at: transporter?.transporter_profile?.insurance_expires_at || '',
+    station_id: transporter?.transporter_profile?.station_id || '',
+    password: transporter ? '' : 'password123', // Pas de mot de passe requis en modif
+    status: transporter?.status || 'active',
   });
 
   const [files, setFiles] = useState({
@@ -71,6 +72,12 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
           data.append(key, formData[key]);
         }
       });
+
+      // Statut si présent
+      if (formData.status) data.append('status', formData.status);
+
+      // Password seulement si renseigné (ou création)
+      if (formData.password) data.append('password', formData.password);
 
       // Fichiers
       if (files.id_card_front) data.append('id_card_front', files.id_card_front);
@@ -263,6 +270,23 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
                   <option value="fourgon">Fourgon</option>
                 </select>
               </div>
+
+              {/* Status (seulement en modification pour l'instant) */}
+              {transporter && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Statut</label>
+                  <select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:outline-none"
+                  >
+                    <option value="active">Actif</option>
+                    <option value="inactive">Inactif</option>
+                    <option value="banned">Banni</option>
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Point / Station *</label>

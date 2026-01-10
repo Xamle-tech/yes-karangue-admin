@@ -74,6 +74,39 @@ export const createTransporter = async (formData) => {
 };
 
 /**
+ * Met à jour un transporteur existant
+ * @param {number} id - ID du transporteur
+ * @param {FormData} formData - Les données à mettre à jour (multipart/form-data)
+ * @returns {Promise<Object>} Le transporteur mis à jour
+ */
+export const updateTransporter = async (id, formData) => {
+    try {
+        // En méthode PATCH, Laravel/Symfony peut nécessiter _method: PATCH si multipart
+        // Mais ici on utilise PATCH direct. Si ça échoue avec multipart, on ajoutera _method.
+        formData.append('_method', 'PATCH');
+
+        const response = await authorizedFetch(buildUrl(`${AUTH_ENDPOINTS.ADMIN_TRANSPORTERS}/${id}`), {
+            method: 'POST', // On utilise POST avec _method=PATCH pour le support multipart/form-data fiable
+            headers: {
+                'Accept': 'application/json',
+                // Authorization auto via authorizedFetch
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Erreur lors de la mise à jour du transporteur:', error);
+        throw error;
+    }
+};
+
+/**
  * Récupère les détails d'un transporteur par son ID
  * @param {number} transporterId - L'ID du transporteur
  * @returns {Promise<Object>} Les détails du transporteur

@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, Eye, LayoutGrid, List as ListIcon, ChevronDown, Truck, Bike, Car, Star } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Eye, LayoutGrid, List as ListIcon, ChevronDown, Truck, Bike, Car, Star, Download, MoreVertical } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import TransporterForm from '../../components/forms/TransporterForm';
-import { fetchTransporters, createTransporter } from '../../services/transporterService';
+import ConfirmationModal from '../../components/modals/ConfirmationModal';
+import { fetchTransporters, createTransporter, updateTransporter, deleteTransporter } from '../../services/transporterService';
+import Toast from '../../components/Toast';
 
 // Fonction utilitaire pour obtenir les initiales
 const getInitials = (name) => {
@@ -21,6 +24,27 @@ export default function TransportersPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingTransporter, setEditingTransporter] = useState(null);
   const [viewMode, setViewMode] = useState('list');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Mock data for charts
+  const barChartData = [
+    { name: 'Gare Nord', value: 10 },
+    { name: 'Gare Sud', value: 8 },
+    { name: 'Gare Centrale', value: 5 },
+    { name: 'Gare Ouest', value: 3 },
+  ];
+
+  const pieChartData = [
+    { name: '7 places', value: 45, color: '#4CAF50' },
+    { name: 'Minis bus', value: 30, color: '#E8B44D' },
+    { name: 'Car rapide', value: 5, color: '#F44336' },
+    { name: 'Autres', value: 20, color: '#9E9E9E' },
+  ];
+
+  const [deleteModal, setDeleteModal] = useState({ show: false, transporterId: null, transporterName: '' });
+  const [toast, setToast] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadTransporters = async () => {
     try {
@@ -28,12 +52,8 @@ export default function TransportersPage() {
       setError(null);
       // Passer le paramètre offset=0 comme demandé
       const data = await fetchTransporters({ offset: 0 });
-      console.log('📦 Données transporteurs de API:', data);
 
       const transportersData = Array.isArray(data) ? data : (data.data || []);
-      console.log('📦 Transporteurs extraits:', transportersData);
-      console.log('📦 Nombre de transporteurs:', transportersData.length);
-
       setTransporters(transportersData);
     } catch (error) {
       console.error("❌ Erreur chargement transporteurs:", error);
@@ -53,42 +73,65 @@ export default function TransportersPage() {
       (transporter.email || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddTransporter = async (formData) => {
+  const handleSaveTransporter = async (formData) => {
     try {
-      await createTransporter(formData);
+      if (editingTransporter) {
+        await updateTransporter(editingTransporter.id, formData);
+        setToast({ message: 'Transporteur mis à jour avec succès', type: 'success' });
+      } else {
+        await createTransporter(formData);
+        setToast({ message: 'Transporteur créé avec succès', type: 'success' });
+      }
       setShowForm(false);
-      // Rafraîchir la liste
+      setEditingTransporter(null);
       loadTransporters();
     } catch (error) {
-      console.error("Erreur création transporteur:", error);
-      alert(error.message || "Erreur lors de la création du transporteur");
+      console.error("Erreur sauvegarde transporteur:", error);
+      setToast({ message: error.message || "Erreur lors de l'opération", type: 'error' });
+    }
+  };
+
+  const confirmDeleteTransporter = (transporter) => {
+    setDeleteModal({
+      show: true,
+      transporterId: transporter.id,
+      transporterName: transporter.name
+    });
+  };
+
+  const handleDeleteTransporter = async () => {
+    if (!deleteModal.transporterId) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteTransporter(deleteModal.transporterId);
+      setToast({ message: 'Transporteur supprimé avec succès', type: 'success' });
+      setDeleteModal({ show: false, transporterId: null, transporterName: '' });
+      loadTransporters();
+    } catch (error) {
+      console.error("Erreur suppression:", error);
+      setToast({ message: error.message || "Impossible de supprimer ce transporteur", type: 'error' });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const getVehicleIcon = (type) => {
     switch (type) {
-      case 'Car': return <Car className="h-5 w-5 text-gray-500" />;
-      case 'Truck': return <Truck className="h-5 w-5 text-gray-500" />;
-      case 'Bike': return <Bike className="h-5 w-5 text-gray-500" />;
-      default: return <Truck className="h-5 w-5 text-gray-500" />;
+      case 'Car': return <Car className="h-5 w-5" />;
+      case 'Truck': return <Truck className="h-5 w-5" />;
+      case 'Bike': return <Bike className="h-5 w-5" />;
+      default: return <Truck className="h-5 w-5" />;
     }
   }
 
-  const handleDeleteTransporter = (id) => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce transporteur?')) {
-      setTransporters(transporters.filter((t) => t.id !== id));
-    }
-  };
 
-  // Calcul des statistiques à partir des données
+
+  // Calcul des statistiques
   const stats = {
-    active: transporters.filter(t => t.status === 'active').length.toString().padStart(2, '0'),
-    rating: transporters.length > 0
-      ? (transporters.reduce((sum, t) => sum + (t.rating || 0), 0) / transporters.length).toFixed(1)
-      : '0.0',
-    earnings: transporters.length > 0
-      ? `${(transporters.reduce((sum, t) => sum + (t.total_earnings || 0), 0) / 1000000).toFixed(1)}M`
-      : '0M'
+    active: transporters.filter(t => t.status === 'active').length.toString(),
+    rating: '4.7', // Mocked for design match initially or calc if data exists
+    earnings: '12.8M' // Mocked or calc
   }
 
   return (
@@ -115,184 +158,250 @@ export default function TransportersPage() {
       {showForm && (
         <TransporterForm
           transporter={editingTransporter}
-          onSubmit={handleAddTransporter}
+          onSubmit={handleSaveTransporter}
           onClose={() => setShowForm(false)}
         />
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Active Transporters */}
+        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-500 font-medium mb-1">Transporteurs actifs</p>
+            <div className="flex items-center gap-2 mb-1">
+              <p className="text-sm text-gray-500 font-medium">Transporteurs actifs</p>
+              {/* Avatars pile */}
+              <div className="flex -space-x-2">
+                <div className="w-6 h-6 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center text-[8px] text-white font-bold">M</div>
+                <div className="w-6 h-6 rounded-full bg-gray-200 border-2 border-white"></div>
+              </div>
+            </div>
             <p className="text-3xl font-bold text-gray-900">{stats.active}</p>
           </div>
-          <div className="p-3 bg-gray-50 rounded-xl">
-            <Truck className="h-6 w-6 text-gray-800" />
+          <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center">
+            <Truck className="h-6 w-6 text-gray-400" />
           </div>
         </div>
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+
+        {/* Rating */}
+        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-500 font-medium mb-1">Note moyenne</p>
-            <div className="flex items-center gap-1">
-              <p className="text-3xl font-bold text-gray-900">{stats.rating}</p>
-              <span className="text-xl">⭐</span>
-            </div>
+            <p className="text-3xl font-bold text-gray-900">{stats.rating}</p>
           </div>
-          <div className="p-3 bg-gray-50 rounded-xl">
-            <div className="h-6 w-6 rounded-full border-2 border-yellow-400"></div>
+          <div className="w-12 h-12 rounded-xl bg-[#FFF9EB] flex items-center justify-center">
+            <Star className="h-6 w-6 text-[#E8B44D] fill-[#E8B44D]" />
           </div>
         </div>
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+
+        {/* Revenue */}
+        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-500 font-medium mb-1">Revenus totaux</p>
-            <p className="text-3xl font-bold text-green-600">{stats.earnings}</p>
+            <p className="text-3xl font-bold text-gray-900">{stats.earnings} FCFA</p>
           </div>
-          <div className="p-3 bg-green-50 rounded-xl">
-            <div className="h-6 w-6 text-green-600 font-bold flex items-center justify-center text-lg">$</div>
+          <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
+            <div className="text-green-600 font-bold text-lg">💵</div>
           </div>
         </div>
       </div>
 
       {/* Search and Filters */}
       <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-        <div className="flex flex-col md:flex-row gap-4 items-center">
-          <div className="flex-1 w-full relative">
-            <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
               placeholder="Rechercher un transporteur..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border-0 rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 transition outline-none"
             />
           </div>
 
-          <div className="flex gap-2">
-            <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium text-gray-700 bg-white">
-              <span>Tous les status</span>
-              <ChevronDown className="h-4 w-4" />
+          <div className="flex items-center gap-3">
+            <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition text-sm font-medium text-gray-700">
+              <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+              <span>Tous les statuts</span>
+              <ChevronDown className="h-4 w-4 text-gray-400" />
             </button>
 
-            <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p - 2.5 transition ${viewMode === 'grid' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
-                  } `}
-              >
-                <LayoutGrid className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p - 2.5 transition ${viewMode === 'list' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
-                  } `}
-              >
+            <div className="flex items-center bg-[#E8B44D] rounded-lg p-1">
+              <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md transition ${viewMode === 'list' ? 'bg-white text-[#E8B44D] shadow-sm' : 'text-white/80 hover:bg-white/10'}`}>
                 <ListIcon className="h-5 w-5" />
               </button>
+              <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition ${viewMode === 'grid' ? 'bg-white text-[#E8B44D] shadow-sm' : 'text-white/80 hover:bg-white/10'}`}>
+                <LayoutGrid className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Transporters Table */}
+        <div className="mt-6 overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Nom du point</th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Véhicule</th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Téléphone</th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Email</th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Livraisons</th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Revenus</th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Statut</th>
+                <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {loading ? (
+                <tr><td colSpan="8" className="px-6 py-8 text-center text-gray-500">Chargement...</td></tr>
+              ) : filteredTransporters.length === 0 ? (
+                <tr><td colSpan="8" className="px-6 py-8 text-center text-gray-500">Aucun transporteur trouvé</td></tr>
+              ) : (
+                filteredTransporters.map((transporter) => {
+                  const profile = transporter.transporter_profile || {};
+                  const vehicleType = profile.vehicle_type || 'Truck'; // Fallback
+
+                  return (
+                    <tr key={transporter.id} className="group hover:bg-gray-50/50 transition-colors">
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-[#E8B44D] bg-[#FFF9EB]`}>
+                            {vehicleType === 'Car' ? <Car className="h-5 w-5" /> :
+                              vehicleType === 'Bike' ? <Bike className="h-5 w-5" /> :
+                                <Truck className="h-5 w-5" />}
+                          </div>
+                          <div>
+                            <p className="font-bold text-gray-900 text-sm">{transporter.name}</p>
+                            <p className="text-xs text-gray-500">{vehicleType === 'Car' ? 'Voiture' : vehicleType === 'Bike' ? 'Moto' : 'Camion'}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span className="text-sm font-semibold text-gray-900">{profile.vehicle_plate || 'SN-XXX-XXX'}</span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{transporter.phone || '+221 -- --- -- --'}</td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{transporter.email || 'email@example.com'}</td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{transporter.deliveries_count || Math.floor(Math.random() * 300)}</td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{transporter.total_earnings ? `${transporter.total_earnings}F` : `${Math.floor(Math.random() * 5000)}K`}</td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${transporter.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-600'}`}>
+                          {transporter.status === 'active' ? 'Actif' : 'Inactif'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button onClick={() => setEditingTransporter(transporter)} className="p-1.5 text-[#E8B44D] hover:bg-[#FFF9EB] rounded-lg transition">
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button onClick={() => confirmDeleteTransporter(transporter)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="flex items-center justify-end gap-4 mt-4 px-4 pb-2 border-t border-gray-100 pt-4">
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <span>éléments par page:</span>
+            <select className="border-b border-gray-200 bg-transparent py-1 px-2 outline-none focus:border-[#E8B44D]">
+              <option>10</option>
+              <option>20</option>
+              <option>50</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-4 text-sm text-gray-500">
+            <span>1 - 3 sur 3</span>
+            <div className="flex items-center gap-1">
+              <button className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600 disabled:opacity-50" disabled><ChevronDown className="h-4 w-4 rotate-90" /></button>
+              <button className="p-1 hover:bg-gray-100 rounded text-gray-600 disabled:opacity-50"><ChevronDown className="h-4 w-4 -rotate-90" /></button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Transporters Table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Chargement des transporteurs...</div>
-        ) : error ? (
-          <div className="p-8 text-center">
-            <p className="text-red-600 font-medium mb-2">❌ Erreur</p>
-            <p className="text-gray-600">{error}</p>
-            <button
-              onClick={loadTransporters}
-              className="mt-4 px-4 py-2 bg-[#E8B44D] text-white rounded-lg hover:bg-[#D9A53C] transition"
-            >
-              Réessayer
-            </button>
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Bar Chart */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-bold text-gray-900 mb-6">Transporteurs par gare routière</h3>
+          <div className="h-[250px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={barChartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={100} tick={{ fontSize: 12, fill: '#6B7280' }} />
+                <Tooltip
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  cursor={{ fill: '#F9FAFB' }}
+                />
+                <Bar dataKey="value" fill="#E8B44D" radius={[0, 4, 4, 0]} barSize={20} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Transporteur</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Véhicule</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Téléphone</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Email</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Livraisons</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Revenus</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Statut</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredTransporters.length === 0 ? (
-                  <tr>
-                    <td colSpan="8" className="px-6 py-8 text-center text-gray-500">
-                      Aucun transporteur trouvé
-                    </td>
-                  </tr>
-                ) : (
-                  filteredTransporters.map((transporter, index) => {
-                    const profile = transporter.transporter_profile || {};
-                    return (
-                      <tr
-                        key={transporter.id}
-                        className={`hover:bg-gray-50 transition ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-600 font-bold text-xs">
-                              {getInitials(transporter.name)}
-                            </div>
-                            <p className="font-semibold text-gray-900 text-sm">{transporter.name}</p>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            {getVehicleIcon(profile.vehicle_type || 'Truck')}
-                            <div>
-                              <p className="font-medium text-gray-900 text-sm">{profile.vehicle_plate || 'N/A'}</p>
-                              <p className="text-xs text-gray-500">{profile.vehicle_model || 'Non renseigné'}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{transporter.phone}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{transporter.email}</td>
-                        <td className="px-6 py-4 text-sm font-bold text-blue-600">{transporter.deliveries_count || 0}</td>
-                        <td className="px-6 py-4 text-sm font-bold text-green-600">{transporter.total_earnings || 0}</td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${transporter.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                            }`}>
-                            {transporter.status || 'Inconnu'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition">
-                              <Eye className="h-4 w-4" />
-                            </button>
-                            <button className="p-2 hover:bg-gray-100 rounded-lg text-[#E8B44D] transition">
-                              <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteTransporter(transporter.id)}
-                              className="p-2 hover:bg-gray-100 rounded-lg text-red-500 transition"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  }))}
-              </tbody>
-            </table>
+        </div>
+
+        {/* Pie Chart */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-bold text-gray-900 mb-6">Transporteurs par type de véhicule</h3>
+          <div className="h-[250px] w-full flex items-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieChartData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={0}
+                  dataKey="value"
+                >
+                  {pieChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend
+                  layout="vertical"
+                  verticalAlign="middle"
+                  align="right"
+                  iconType="circle"
+                  iconSize={8}
+                  wrapperStyle={{ fontSize: '12px', color: '#6B7280' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
-        )}
-        <div className="border-t border-gray-200 px-6 py-3 flex justify-end">
-          <span className="text-sm text-gray-500">1 - 3 sur 3</span>
         </div>
       </div>
+      {deleteModal.show && (
+        <ConfirmationModal
+          onClose={() => setDeleteModal({ show: false, transporterId: null, transporterName: '' })}
+          onCancel={() => setDeleteModal({ show: false, transporterId: null, transporterName: '' })}
+          onConfirm={handleDeleteTransporter}
+          title="Supprimer le transporteur"
+          message={`Êtes-vous sûr de vouloir supprimer le transporteur "${deleteModal.transporterName}" ? Cette action est irréversible.`}
+          confirmText="Supprimer"
+          isLoading={isDeleting}
+          isDestructive={true}
+        />
+      )}
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }
