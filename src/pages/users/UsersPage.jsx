@@ -326,138 +326,145 @@ export default function UsersPage() {
 
         {/* Users Table */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Nom
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Téléphone
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Email
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Point / Localisation
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Statut
-                  </th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredUsers.map((user, index) => (
-                  <tr
-                    key={user.id}
-                    className={`hover:bg-gray-50 transition ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
-                  >
-                    {/* Nom avec avatar et initiales */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <div className={`w-10 h-10 rounded-full ${user.avatarColor} flex items-center justify-center text-white font-semibold text-sm`}>
-                            {user.initials}
-                          </div>
-                          {user.online && (
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900 text-sm">{user.name}</p>
-                          <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${user.roleColor}`}>
-                            {user.role}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Téléphone */}
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {user.phone}
-                    </td>
-
-                    {/* Email */}
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {user.email}
-                    </td>
-
-                    {/* Point / Localisation */}
-                    <td className="px-6 py-4 text-sm">
-                      {user.pointName ? (
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-gray-400" />
-                          <div>
-                            <p className="font-medium text-gray-900">{user.pointName}</p>
-                            <p className="text-xs text-gray-500">{user.location}</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">N/A</span>
-                      )}
-                    </td>
-
-                    {/* Statut */}
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold ${user.statusColor}`}>
-                        {user.status}
-                      </span>
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-1">
-                        {/* Renvoyer l'invitation pour les utilisateurs en attente */}
-                        {user.status === 'pending' && (
-                          <button
-                            onClick={() => handleResendInvitation(user.id)}
-                            disabled={resendingId === user.id}
-                            className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Renvoyer l'invitation"
-                          >
-                            {resendingId === user.id ? (
-                              <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
-                            ) : (
-                              <Mail className="h-4 w-4" />
-                            )}
-                          </button>
-                        )}
-                        <button
-                          onClick={() => setViewingUser(user)}
-                          className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition"
-                          title="Voir"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingUser(user);
-                            setShowForm(true);
-                          }}
-                          className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition"
-                          title="Modifier"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-
-                        <button
-                          onClick={() => confirmDeleteUser(user)}
-                          className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
+          {loading ? (
+            <div className="p-12 text-center">
+              <div className="inline-block animate-spin h-8 w-8 border-4 border-[#E8B44D] rounded-full border-t-transparent"></div>
+              <p className="mt-4 text-gray-600">Chargement des utilisateurs...</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                      Nom
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                      Téléphone
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                      Email
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                      Point / Localisation
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                      Statut
+                    </th>
+                    <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredUsers.map((user, index) => (
+                    <tr
+                      key={user.id}
+                      className={`hover:bg-gray-50 transition ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
+                    >
+                      {/* Nom avec avatar et initiales */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <div className={`w-10 h-10 rounded-full ${user.avatarColor} flex items-center justify-center text-white font-semibold text-sm`}>
+                              {user.initials}
+                            </div>
+                            {user.online && (
+                              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900 text-sm">{user.name}</p>
+                            <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${user.roleColor}`}>
+                              {user.role}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Téléphone */}
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {user.phone}
+                      </td>
+
+                      {/* Email */}
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {user.email}
+                      </td>
+
+                      {/* Point / Localisation */}
+                      <td className="px-6 py-4 text-sm">
+                        {user.pointName ? (
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-gray-400" />
+                            <div>
+                              <p className="font-medium text-gray-900">{user.pointName}</p>
+                              <p className="text-xs text-gray-500">{user.location}</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">N/A</span>
+                        )}
+                      </td>
+
+                      {/* Statut */}
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold ${user.statusColor}`}>
+                          {user.status}
+                        </span>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-1">
+                          {/* Renvoyer l'invitation pour les utilisateurs en attente */}
+                          {user.status === 'pending' && (
+                            <button
+                              onClick={() => handleResendInvitation(user.id)}
+                              disabled={resendingId === user.id}
+                              className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Renvoyer l'invitation"
+                            >
+                              {resendingId === user.id ? (
+                                <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+                              ) : (
+                                <Mail className="h-4 w-4" />
+                              )}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setViewingUser(user)}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition"
+                            title="Voir"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingUser(user);
+                              setShowForm(true);
+                            }}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition"
+                            title="Modifier"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+
+                          <button
+                            onClick={() => confirmDeleteUser(user)}
+                            className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {/* Pagination */}
           <div className="border-t border-gray-200 px-6 py-3">

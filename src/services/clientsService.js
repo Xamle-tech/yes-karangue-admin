@@ -67,3 +67,34 @@ export const fetchClientById = async (clientId) => {
         throw error;
     }
 };
+
+/**
+ * Supprime un client
+ * @param {number|string} clientId - L'ID du client à supprimer
+ * @returns {Promise<void>}
+ */
+export const deleteClient = async (clientId) => {
+    try {
+        const url = buildUrl(`/api/v1/admin/users/${clientId}`);
+
+        const response = await authorizedFetch(url, {
+            method: 'DELETE',
+            headers: getDefaultHeaders(),
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('Client non trouvé');
+            }
+            if (response.status === 409) {
+                throw new Error('Impossible de supprimer ce client car il a des données associées');
+            }
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        return;
+    } catch (error) {
+        console.error('Erreur lors de la suppression du client:', error);
+        throw error;
+    }
+};
