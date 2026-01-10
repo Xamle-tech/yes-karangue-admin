@@ -40,6 +40,13 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
     // For creation, valid station is usually required
     if (!transporter && !formData.station_id) newErrors.station_id = 'Le point (station) est requis';
 
+    // Documents obligatoires à la création
+    if (!transporter) {
+      if (!files.id_card_front) newErrors.id_card_front = 'La CNI Recto est requise';
+      if (!files.id_card_back) newErrors.id_card_back = 'La CNI Verso est requise';
+      if (!files.vehicle_registration_card) newErrors.vehicle_registration_card = 'La Carte Grise est requise';
+    }
+
     return newErrors;
   };
 
@@ -274,17 +281,20 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Helper for file inputs */}
                 {['id_card_front', 'id_card_back', 'vehicle_registration_card'].map((field) => (
-                  <div key={field} className="border border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 transition relative">
-                    <input
-                      type="file"
-                      name={field}
-                      onChange={handleFileChange}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    />
-                    <Upload className="h-6 w-6 text-gray-400 mx-auto mb-2" />
-                    <p className="text-xs text-gray-600 font-medium truncate">
-                      {files[field] ? files[field].name : field.replace(/_/g, ' ')}
-                    </p>
+                  <div key={field} className="relative">
+                    <div className={`border border-dashed ${errors[field] ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:bg-gray-50'} rounded-lg p-4 text-center transition relative`}>
+                      <input
+                        type="file"
+                        name={field}
+                        onChange={handleFileChange}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <Upload className={`h-6 w-6 mx-auto mb-2 ${errors[field] ? 'text-red-400' : 'text-gray-400'}`} />
+                      <p className={`text-xs font-medium truncate ${errors[field] ? 'text-red-600' : 'text-gray-600'}`}>
+                        {files[field] ? files[field].name : field.replace(/_/g, ' ')}
+                      </p>
+                    </div>
+                    {errors[field] && <p className="text-red-500 text-xs mt-1 text-center">{errors[field]}</p>}
                   </div>
                 ))}
                 {/* Photos */}
