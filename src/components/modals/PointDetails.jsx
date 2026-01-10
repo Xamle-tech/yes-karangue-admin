@@ -1,11 +1,17 @@
-import { X, MapPin, Clock, Users, Phone, Mail } from 'lucide-react';
+import { ArrowLeft, Edit2, Trash2, MapPin, Phone, Mail, Clock, Users, Package, Calendar } from 'lucide-react';
 
-export default function PointDetails({ point, onClose, onEdit }) {
+export default function PointDetails({ point, onBack, onEdit, onDelete }) {
+  if (!point) return null;
+
   const getTypeLabel = (type) => {
     const labels = {
       depot: 'Dépôt',
       retrait: 'Retrait',
       both: 'Dépôt & Retrait',
+      // API might return standard values
+      'DEPOT': 'Dépôt',
+      'RETRAIT': 'Retrait',
+      'DEPOT_RETRAIT': 'Dépôt & Retrait'
     };
     return labels[type] || type;
   };
@@ -24,147 +30,188 @@ export default function PointDetails({ point, onClose, onEdit }) {
   };
 
   const workingDays = [
-    'monday',
-    'tuesday',
-    'wednesday',
-    'thursday',
-    'friday',
-    'saturday',
-    'sunday',
+    'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
   ];
 
+  // Mock stats if missing
+  const activeAgents = point.agents || 0;
+  const processedParcels = point.shipmentsProcessed || point.shipments_count || 0;
+
+  const getManagerName = (point) => {
+    if (point.manager_name) return point.manager_name;
+    if (typeof point.manager === 'object' && point.manager !== null) {
+      return `${point.manager.firstName || ''} ${point.manager.lastName || ''}`.trim() || point.manager.email || 'Admin';
+    }
+    if (typeof point.manager === 'string') return point.manager;
+    return 'Non assigné';
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-lg max-w-2xl w-full my-8">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">{point.name}</h2>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-lg transition"
-          >
-            <X className="h-5 w-5 text-gray-600" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
-          {/* Type Badge */}
-          <div>
-            <span className="inline-block px-4 py-2 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">
-              {getTypeLabel(point.type)}
-            </span>
-            <span className="ml-3 inline-block px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
-              {point.status === 'active' ? '✓ Actif' : '✗ Inactif'}
-            </span>
+    <div className="space-y-6 animate-in fade-in duration-300 h-full">
+      {/* Header & Breadcrumbs */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+            <span className="cursor-pointer hover:text-gray-700" onClick={onBack}>Points de Retrait</span>
+            <span>{'>'}</span>
+            <span className="text-gray-900 font-medium">Point N° {point.id}</span>
           </div>
 
-          {/* Address */}
-          <div>
-            <div className="flex items-start gap-3">
-              <MapPin className="h-5 w-5 text-[#305669] flex-shrink-0 mt-1" />
-              <div>
-                <p className="text-sm text-gray-600 font-medium">Adresse</p>
-                <p className="text-gray-900 mt-1">{point.address}</p>
-              </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onBack}
+              className="p-2 bg-white rounded-full border border-gray-200 hover:bg-gray-50 transition"
+            >
+              <ArrowLeft className="h-5 w-5 text-gray-600" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{point.name}</h1>
             </div>
-          </div>
-
-          {/* Contact Info */}
-          <div className="grid grid-cols-2 gap-6">
-            <div className="flex items-start gap-3">
-              <Phone className="h-5 w-5 text-[#305669] flex-shrink-0 mt-1" />
-              <div>
-                <p className="text-sm text-gray-600 font-medium">Téléphone</p>
-                <p className="text-gray-900 mt-1">{point.phone}</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <Mail className="h-5 w-5 text-[#305669] flex-shrink-0 mt-1" />
-              <div>
-                <p className="text-sm text-gray-600 font-medium">Email</p>
-                <p className="text-gray-900 mt-1">{point.email}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Manager Info */}
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <p className="text-sm font-semibold text-gray-900 mb-3">Gestionnaire</p>
-            <div className="space-y-2">
-              <p className="text-gray-900">{point.manager}</p>
-              <p className="text-sm text-gray-600">Téléphone: {point.managerPhone}</p>
-            </div>
-          </div>
-
-          {/* Statistics */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-blue-600" />
-                <div>
-                  <p className="text-sm text-gray-600">Agents assignés</p>
-                  <p className="text-2xl font-bold text-blue-600">{point.agents}</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-              <div>
-                <p className="text-sm text-gray-600">Colis traités</p>
-                <p className="text-2xl font-bold text-purple-600">{point.shipmentsProcessed}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Working Hours */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Clock className="h-5 w-5 text-[#305669]" />
-              <p className="text-sm font-semibold text-gray-900">Horaires d'ouverture</p>
-            </div>
-            <div className="space-y-2">
-              {workingDays.map((day) => (
-                <div key={day} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                  <p className="text-sm font-medium text-gray-900 w-32">
-                    {getDaysLabel(day)}
-                  </p>
-                  {point.workingHours[day].closed ? (
-                    <p className="text-sm text-red-600 font-medium">Fermé</p>
-                  ) : (
-                    <p className="text-sm text-gray-600">
-                      {point.workingHours[day].start} - {point.workingHours[day].end}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Metadata */}
-          <div className="pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-500">
-              Créé le {new Date(point.createdAt).toLocaleDateString('fr-FR')}
-            </p>
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="p-6 border-t border-gray-200 flex gap-3">
+        <div className="flex items-center gap-3">
           <button
             onClick={onEdit}
-            className="flex-1 px-4 py-2.5 bg-[#305669] text-white rounded-lg font-medium hover:bg-[#1F3A4A] transition"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#E8B44D] text-white rounded-full font-medium hover:bg-[#D9A53C] transition shadow-sm"
           >
-            Modifier
+            <Edit2 className="h-4 w-4" />
+            <span>Modifier</span>
           </button>
           <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition"
+            onClick={onDelete}
+            className="flex items-center gap-2 px-5 py-2.5 border border-red-200 text-red-600 bg-red-50 rounded-full font-medium hover:bg-red-100 transition shadow-sm"
           >
-            Fermer
+            <Trash2 className="h-4 w-4" />
+            <span>Supprimer</span>
           </button>
+        </div>
+      </div>
+
+      {/* Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Main Info Column (Left) */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Status & Type Card */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3 mb-6">
+              <span className={`px-4 py-1.5 rounded-full text-sm font-semibold bg-gray-100 text-gray-800`}>
+                {getTypeLabel(point.type)}
+              </span>
+              <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${point.is_active || point.status === 'Actif' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                {point.is_active || point.status === 'Actif' ? 'Actif' : 'Inactif'}
+              </span>
+            </div>
+
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Informations générales</h3>
+
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <Mail className="h-5 w-5 text-gray-400 mt-0.5" />
+                <p className="text-gray-900">{point.email || 'N/A'}</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <Phone className="h-5 w-5 text-gray-400 mt-0.5" />
+                <p className="text-gray-900">{point.main_phone || point.phone || 'N/A'}</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
+                <p className="text-gray-900">{point.address}</p>
+              </div>
+              <div className="flex items-center gap-3 pt-4 text-sm text-gray-500 border-t border-gray-100 mt-4">
+                <Calendar className="h-4 w-4" />
+                <p>Date de création <span className="text-[#305669] font-medium ml-auto float-right">{new Date(point.createdAt || Date.now()).toLocaleDateString('fr-FR')}</span></p>
+              </div>
+            </div>
+          </div>
+
+          {/* Manager Card */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Gestionnaire</h3>
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-[#E5F6FD] flex items-center justify-center text-[#305669]">
+                <Users className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900">{getManagerName(point)}</p>
+                <p className="text-sm text-gray-500">{point.managerPhone || 'N/A'}</p>
+                {/* Note: ID not shown here in design, usually just name/phone */}
+              </div>
+            </div>
+            <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
+              <Phone className="h-4 w-4" />
+              <span>{point.managerPhone || point.manager_user_id || 'N/A'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats & Hours Column (Right/Center) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Stats Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 font-medium mb-1">Agents assignés</p>
+                <p className="text-4xl font-bold text-gray-900">{activeAgents}</p>
+              </div>
+              <div className="h-12 w-12 rounded-xl bg-gray-50 flex items-center justify-center">
+                <Users className="h-6 w-6 text-gray-600" />
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 font-medium mb-1">Colis traités</p>
+                <p className="text-4xl font-bold text-gray-900">{processedParcels}</p>
+              </div>
+              <div className="h-12 w-12 rounded-xl bg-[#FFF9EB] flex items-center justify-center">
+                <Package className="h-6 w-6 text-[#E8B44D]" />
+              </div>
+            </div>
+          </div>
+
+          {/* Opening Hours */}
+          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+            <h3 className="text-xl font-bold text-gray-900 mb-6">Horaires d'ouverture</h3>
+
+            <div className="space-y-0">
+              <div className="grid grid-cols-3 text-sm font-medium text-gray-500 mb-4 px-2">
+                <div>Jour</div>
+                <div>Disponibilité</div>
+                <div className="text-right">Horaires</div>
+              </div>
+
+              {workingDays.map((day) => {
+                const hours = point.workingHours?.[day];
+                const isOpen = hours && !hours.closed;
+
+                return (
+                  <div key={day} className="grid grid-cols-3 py-4 border-b border-gray-50 last:border-0 items-center px-2 hover:bg-gray-50 transition rounded-lg">
+                    <div className="font-medium text-gray-900 capitalize">{getDaysLabel(day)}</div>
+                    <div>
+                      {isOpen ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#FFF9EB] text-[#B88726] text-xs font-bold">
+                          <span className="h-1.5 w-1.5 rounded-full bg-[#E8B44D]"></span>
+                          Ouvert
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 text-gray-400 text-sm">
+                          Fermé
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-right text-gray-600 font-medium">
+                      {isOpen ? `${hours.start} - ${hours.end}` : '--:--'}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
+
 

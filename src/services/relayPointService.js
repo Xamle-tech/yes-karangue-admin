@@ -181,7 +181,10 @@ export const deleteRelayPoint = async (relayPointId) => {
                 throw new Error('Point de retrait non trouvé');
             }
             if (response.status === 409) {
-                throw new Error('Impossible de supprimer ce point de retrait car il est en cours d\'utilisation');
+                const errorData = await response.json().catch(() => ({}));
+                // Support both nested error object and top-level message
+                const errorMessage = errorData.error?.message || errorData.message || 'Impossible de supprimer ce point de retrait car il est en cours d\'utilisation';
+                throw new Error(errorMessage);
             }
             throw new Error(`Erreur HTTP: ${response.status}`);
         }

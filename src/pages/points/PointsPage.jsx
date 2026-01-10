@@ -2,21 +2,30 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, MapPin, Users, Package, Eye, LayoutGrid, List as ListIcon, ChevronDown } from 'lucide-react';
 import PointForm from '../../components/forms/PointForm';
 import PointDetails from '../../components/modals/PointDetails';
+import ConfirmationModal from '../../components/modals/ConfirmationModal';
 import Toast from '../../components/Toast';
 import { fetchRelayPoints, deleteRelayPoint, createRelayPoint, updateRelayPoint } from '../../services/relayPointService';
+import SuccessModal from '../../components/modals/SuccessModal';
+import ErrorModal from '../../components/modals/ErrorModal';
 
 export default function PointsPage() {
+  // States: 'list', 'create', 'edit', 'details'
+  const [viewMode, setViewMode] = useState('list');
   const [points, setPoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showForm, setShowForm] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
-  const [selectedPoint, setSelectedPoint] = useState(null);
-  const [editingPoint, setEditingPoint] = useState(null);
-  const [viewMode, setViewMode] = useState('list');
+  const [selectedPoint, setSelectedPoint] = useState(null); // Pour 'edit' et 'details'
   const [filterType, setFilterType] = useState('');
-  const [deletingId, setDeletingId] = useState(null); // Pour afficher le loader pendant la suppression
-  const [toast, setToast] = useState(null); // Pour afficher les notifications
+  const [deletingId, setDeletingId] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [pointToDelete, setPointToDelete] = useState(null);
+  const [successModal, setSuccessModal] = useState({ show: false, message: '' });
+  const [errorModal, setErrorModal] = useState({ show: false, message: '' });
+
+  // ... (rest of the component logic) ...
+
+
 
   // Charger les points de retrait
   const loadRelayPoints = async () => {
@@ -31,7 +40,7 @@ export default function PointsPage() {
       setPoints(Array.isArray(data) ? data : (data.data || []));
     } catch (error) {
       console.error('Erreur chargement:', error);
-      alert(error.message);
+      setToast({ message: error.message, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -51,99 +60,135 @@ export default function PointsPage() {
     shipments: points.reduce((acc, curr) => acc + (curr.shipmentsProcessed || curr.shipments_count || 0), 0),
   };
 
-  const handleAddOrUpdatePoint = async (formData) => {
+  const handleAddPoint = async (formData) => {
     try {
-      if (editingPoint) {
-        // Mise à jour d'un point existant
-        await updateRelayPoint(editingPoint.id, formData);
-        setToast({
-          message: `${formData.name} a été modifié avec succès`,
-          type: 'success'
-        });
-      } else {
-        // Création d'un nouveau point
-        await createRelayPoint(formData);
-        setToast({
-          message: `${formData.name} a été créé avec succès`,
-          type: 'success'
-        });
-      }
-
-      setShowForm(false);
-      setEditingPoint(null);
+      await createRelayPoint(formData);
+      setSuccessModal({
+        show: true,
+        message: 'Points de Retrait crée avec succès.'
+      });
+      setViewMode('list');
       await loadRelayPoints();
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
-
-      // Gestion des erreurs avec toast
-      let errorMessage = 'Une erreur est survenue';
-      let toastType = 'error';
-
-      if (error.message.includes('non trouvé') || error.message.includes('404')) {
-        errorMessage = 'Point relais introuvable';
-      } else if (error.message.includes('cours d\'utilisation') || error.message.includes('409')) {
-        errorMessage = 'Impossible de modifier ce point relais car il est en cours d\'utilisation';
-        toastType = 'warning';
-      } else if (error.message.includes('validation') || error.message.includes('422')) {
-        errorMessage = error.message;
-        toastType = 'warning';
-      } else {
-        errorMessage = error.message;
-      }
-
-      setToast({
-        message: errorMessage,
-        type: toastType
-      });
-
-      // Re-lancer l'erreur pour que le formulaire puisse aussi la gérer
-      throw error;
+      throw error; // Propagate to form
     }
   };
 
-  const handleDeletePoint = async (id) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce point de retrait?\n\nCette action est irréversible.')) {
-      return;
-    }
-
-    setDeletingId(id); // Activer le loader
+  const handleUpdatePoint = async (formData) => {
     try {
-      await deleteRelayPoint(id);
-
-      // Afficher un message de succès avec toast
-      const pointName = points.find(p => p.id === id)?.name || 'Le point relais';
-      setToast({
-        message: `${pointName} a été supprimé avec succès`,
-        type: 'success'
+      await updateRelayPoint(selectedPoint.id, formData);
+      setSuccessModal({
+        show: true,
+        message: 'Informations mis à jour avec succès.'
       });
-
-      // Recharger la liste
+      setViewMode('list');
+      setSelectedPoint(null);
       await loadRelayPoints();
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
+      throw error; // Propagate to form
+    }
+  };
 
-      // Messages d'erreur personnalisés avec toast
-      let errorMessage = 'Une erreur est survenue lors de la suppression';
-      let toastType = 'error';
+  const confirmDelete = (point) => {
+    setPointToDelete(point);
+    setShowDeleteModal(true);
+  };
 
-      if (error.message.includes('non trouvé') || error.message.includes('404')) {
-        errorMessage = 'Point relais introuvable. Il a peut-être déjà été supprimé.';
-      } else if (error.message.includes('cours d\'utilisation') || error.message.includes('409')) {
-        errorMessage = 'Impossible de supprimer ce point relais car il est actuellement en cours d\'utilisation (colis actifs ou agents assignés).';
-        toastType = 'warning';
-      } else {
-        errorMessage = error.message;
+  const executeDelete = async () => {
+    if (!pointToDelete) return;
+
+    setDeletingId(pointToDelete.id);
+    try {
+      await deleteRelayPoint(pointToDelete.id);
+
+      // Close delete modal first
+      setShowDeleteModal(false);
+
+      setSuccessModal({
+        show: true,
+        message: `Point "${pointToDelete.name}" a été supprimé.`
+      });
+
+      if (viewMode === 'details') {
+        setViewMode('list');
       }
 
-      setToast({
-        message: errorMessage,
-        type: toastType
-      });
+      await loadRelayPoints();
+    } catch (error) {
+      console.error('Erreur suppression:', error);
+      // Show error modal instead of toast
+      setErrorModal({ show: true, message: error.message });
     } finally {
-      setDeletingId(null); // Désactiver le loader
+      setDeletingId(null);
+      // Delete modal is closed in try block to show success modal immediately
+      if (showDeleteModal) setShowDeleteModal(false);
+      setPointToDelete(null);
     }
   };
 
+  const handleEditClick = (point) => {
+    setSelectedPoint(point);
+    setViewMode('edit');
+  };
+
+  const handleDetailsClick = (point) => {
+    setSelectedPoint(point);
+    setViewMode('details');
+  };
+
+  const handleBackToList = () => {
+    setViewMode('list');
+    setSelectedPoint(null);
+  };
+
+  const getManagerName = (point) => {
+    // Priority: manager_name (from form/DB), or manager object properties, or manager string
+    if (point.manager_name) return point.manager_name;
+    if (typeof point.manager === 'object' && point.manager !== null) {
+      return `${point.manager.firstName || ''} ${point.manager.lastName || ''}`.trim() || point.manager.email || 'Admin';
+    }
+    if (typeof point.manager === 'string') return point.manager;
+    return 'Non assigné';
+  };
+
+  const getManagerInitials = (point) => {
+    const name = getManagerName(point);
+    if (name === 'Non assigné') return 'NA';
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  // Render Views
+  if (viewMode === 'create') {
+    return (
+      <PointForm
+        onSubmit={handleAddPoint}
+        onCancel={handleBackToList}
+      />
+    );
+  }
+
+  if (viewMode === 'edit') {
+    return (
+      <PointForm
+        point={selectedPoint}
+        onSubmit={handleUpdatePoint}
+        onCancel={handleBackToList}
+      />
+    );
+  }
+
+  if (viewMode === 'details') {
+    return (
+      <PointDetails
+        point={selectedPoint}
+        onBack={handleBackToList}
+        onEdit={() => setViewMode('edit')}
+        onDelete={() => confirmDelete(selectedPoint)}
+      />
+    );
+  }
+
+  // List View
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -153,28 +198,13 @@ export default function PointsPage() {
           <p className="text-gray-600 mt-1">Gérez tous les points de retrait et dépôt</p>
         </div>
         <button
-          onClick={() => {
-            setEditingPoint(null);
-            setShowForm(true);
-          }}
+          onClick={() => setViewMode('create')}
           className="flex items-center gap-2 bg-[#E8B44D] text-white px-5 py-2.5 rounded-lg hover:bg-[#D9A53C] transition font-medium shadow-sm"
         >
           <Plus className="h-5 w-5" />
           Ajouter un point
         </button>
       </div>
-
-      {/* Form Modal */}
-      {showForm && (
-        <PointForm
-          point={editingPoint}
-          onSubmit={handleAddOrUpdatePoint}
-          onClose={() => {
-            setShowForm(false);
-            setEditingPoint(null);
-          }}
-        />
-      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -229,29 +259,11 @@ export default function PointsPage() {
               className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none"
             />
           </div>
-
           <div className="flex gap-2">
             <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium text-gray-700 bg-white">
               <span>Tous les types</span>
               <ChevronDown className="h-4 w-4" />
             </button>
-
-            <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2.5 transition ${viewMode === 'grid' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-              >
-                <LayoutGrid className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2.5 transition ${viewMode === 'list' ? 'bg-[#E8B44D] text-white' : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-              >
-                <ListIcon className="h-5 w-5" />
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -302,10 +314,10 @@ export default function PointsPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold text-xs">
-                            {point.managerInitials || point.manager?.substring(0, 2).toUpperCase() || 'NA'}
+                            {getManagerInitials(point)}
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900 text-sm">{point.manager || 'Non assigné'}</p>
+                            <p className="font-medium text-gray-900 text-sm">{getManagerName(point)}</p>
                             <p className="text-xs text-gray-500">{point.managerPhone || point.phone || '-'}</p>
                           </div>
                         </div>
@@ -317,6 +329,7 @@ export default function PointsPage() {
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                           {point.type || 'Non défini'}
                         </span>
+
                       </td>
                       <td className="px-6 py-4 text-sm font-bold text-blue-600">
                         {point.agents || 0}
@@ -334,36 +347,26 @@ export default function PointsPage() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition">
+                          <button
+                            onClick={() => handleDetailsClick(point)}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition"
+                            title="Voir les détails"
+                          >
                             <Eye className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => {
-                              setEditingPoint(point);
-                              setShowForm(true);
-                            }}
+                            onClick={() => handleEditClick(point)}
                             className="p-2 hover:bg-gray-100 rounded-lg text-[#E8B44D] transition"
                             title="Modifier"
                           >
                             <Edit2 className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => handleDeletePoint(point.id)}
-                            disabled={deletingId === point.id}
-                            className={`p-2 hover:bg-gray-100 rounded-lg transition ${deletingId === point.id
-                              ? 'text-gray-400 cursor-not-allowed'
-                              : 'text-red-500'
-                              }`}
-                            title={deletingId === point.id ? 'Suppression en cours...' : 'Supprimer'}
+                            onClick={() => confirmDelete(point)}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-red-500 transition"
+                            title="Supprimer"
                           >
-                            {deletingId === point.id ? (
-                              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       </td>
@@ -374,11 +377,40 @@ export default function PointsPage() {
             </table>
           </div>
         )}
-        {/* Pagination placeholder */}
         <div className="border-t border-gray-200 px-6 py-3 flex justify-end">
           <span className="text-sm text-gray-500">1 - {filteredPoints.length} sur {filteredPoints.length}</span>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {showDeleteModal && (
+        <ConfirmationModal
+          title="Supprimer le point"
+          message={`Êtes-vous sûr de vouloir supprimer le point ${pointToDelete?.name} ?`}
+          confirmText="Supprimer"
+          cancelText="Annuler"
+          onConfirm={executeDelete}
+          onCancel={() => setShowDeleteModal(false)}
+          isLoading={deletingId === pointToDelete?.id}
+          isDestructive={true}
+        />
+      )}
+
+      {/* Success Modal */}
+      {successModal.show && (
+        <SuccessModal
+          message={successModal.message}
+          onClose={() => setSuccessModal({ show: false, message: '' })}
+        />
+      )}
+
+      {/* Error Modal */}
+      {errorModal.show && (
+        <ErrorModal
+          message={errorModal.message}
+          onClose={() => setErrorModal({ show: false, message: '' })}
+        />
+      )}
 
       {/* Toast Notifications */}
       {toast && (
