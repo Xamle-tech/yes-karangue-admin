@@ -1,18 +1,19 @@
 import { useState, useEffect } from 'react';
-import { X, Upload, FileText, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Check, Upload, FileText, Image as ImageIcon, Link } from 'lucide-react';
 import { fetchRelayPoints } from '../../services/relayPointService';
+import { fetchTransporters } from '../../services/transporterService';
 
 export default function TransporterForm({ transporter, onSubmit, onClose }) {
   const [formData, setFormData] = useState({
     full_name: transporter?.name || '',
     email: transporter?.email || '',
     phone: transporter?.phone || '',
-    vehicle_type: transporter?.transporter_profile?.vehicle_type || 'moto',
+    vehicle_type: transporter?.transporter_profile?.vehicle_type || 'voiture',
     vehicle_plate: transporter?.transporter_profile?.vehicle_plate || '',
     insurer_name: transporter?.transporter_profile?.insurer_name || '',
     insurance_expires_at: transporter?.transporter_profile?.insurance_expires_at || '',
     station_id: transporter?.transporter_profile?.station_id || '',
-    password: transporter ? '' : 'password123', // Pas de mot de passe requis en modif
+    password: transporter ? '' : 'password123',
     status: transporter?.status || 'active',
   });
 
@@ -25,8 +26,6 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
 
   const [stations, setStations] = useState([]);
   const [stationsLoading, setStationsLoading] = useState(false);
-  const [stationsError, setStationsError] = useState(null);
-
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -36,16 +35,10 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
     if (!formData.email) newErrors.email = 'L\'email est requis';
     if (!formData.phone) newErrors.phone = 'Le téléphone est requis';
     if (!formData.vehicle_type) newErrors.vehicle_type = 'Le type de véhicule est requis';
+    if (!formData.vehicle_plate) newErrors.vehicle_plate = 'Le numéro de véhicule est requis';
 
-    // station_id est souvent requis par l'API — forcer la sélection
-    if (!formData.station_id) newErrors.station_id = 'Le point (station) est requis';
-
-    // Validation des fichiers pour la création
-    if (!transporter) {
-      if (!files.id_card_front) newErrors.id_card_front = 'Recto CNI requis';
-      if (!files.id_card_back) newErrors.id_card_back = 'Verso CNI requis';
-      // Autres fichiers peuvent être optionnels selon le cas, mais souvent requis
-    }
+    // For creation, valid station is usually required
+    if (!transporter && !formData.station_id) newErrors.station_id = 'Le point (station) est requis';
 
     return newErrors;
   };
@@ -61,38 +54,22 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
     setIsSubmitting(true);
     try {
       const data = new FormData();
-      // Champs texte (on n'ajoute pas station_id si vide)
       Object.keys(formData).forEach(key => {
         if (key === 'station_id') {
-          if (formData.station_id) {
-            // s'assurer d'envoyer une valeur numérique en chaîne
-            data.append('station_id', String(Number(formData.station_id)));
-          }
+          if (formData.station_id) data.append('station_id', String(Number(formData.station_id)));
         } else {
           data.append(key, formData[key]);
         }
       });
 
-      // Statut si présent
-      if (formData.status) data.append('status', formData.status);
-
-      // Password seulement si renseigné (ou création)
-      if (formData.password) data.append('password', formData.password);
-
-      // Fichiers
+      // Appending files
       if (files.id_card_front) data.append('id_card_front', files.id_card_front);
       if (files.id_card_back) data.append('id_card_back', files.id_card_back);
       if (files.vehicle_registration_card) data.append('vehicle_registration_card', files.vehicle_registration_card);
-
-      // Photos du véhicule (array)
       if (files.vehicle_photos) {
-        // Si c'est une FileList (multiple)
         if (files.vehicle_photos instanceof FileList) {
-          Array.from(files.vehicle_photos).forEach((file) => {
-            data.append('vehicle_photos[]', file);
-          });
+          Array.from(files.vehicle_photos).forEach((file) => data.append('vehicle_photos[]', file));
         } else {
-          // Si un seul fichier
           data.append('vehicle_photos[]', files.vehicle_photos);
         }
       }
@@ -111,359 +88,244 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
+        const newErr = { ...prev };
+        delete newErr[name];
+        return newErr;
       });
     }
   };
-
-  // Charger les stations (points de retrait) si nécessaire
-  useEffect(() => {
-    const loadStations = async () => {
-      try {
-        setStationsLoading(true);
-        setStationsError(null);
-        // debug: token presence
-        console.log('🔎 Loading stations. token present:', !!localStorage.getItem('authToken'));
-        const data = await fetchRelayPoints({ limit: 100 });
-        console.log('🔎 fetchRelayPoints response:', data);
-        // L'API peut retourner {data: [...]} ou un tableau
-        const items = Array.isArray(data) ? data : (data.data || data.items || []);
-        setStations(items);
-        if (!items || items.length === 0) {
-          setStationsError('Aucun point trouvé');
-        }
-      } catch (err) {
-        console.warn('Erreur chargement stations:', err);
-        setStations([]);
-        setStationsError(err.message || 'Erreur chargement points');
-
-        // DEBUG FALLBACK: tenter un fetch non-authentifié vers l'endpoint public pour vérifier si la ressource est accessible
-        try {
-          fetch('https://yes-karangue-api-production.up.railway.app/api/v1/admin/relay-points?limit=100')
-            .then((r) => {
-              console.log('Fallback raw response status:', r.status);
-              return r.json().catch(() => null);
-            })
-            .then((publicData) => {
-              console.log('Fallback public fetch data:', publicData);
-              const items2 = publicData ? (Array.isArray(publicData) ? publicData : (publicData.data || publicData.items || [])) : [];
-              if (items2 && items2.length > 0) {
-                setStations(items2);
-                setStationsError('Chargé via fallback non authentifié — vérifiez l\'authentification');
-              }
-            })
-            .catch((fallbackErr) => console.warn('Fallback fetch failed:', fallbackErr));
-        } catch (fallbackErr) {
-          console.warn('Fallback fetch threw:', fallbackErr);
-        }
-      } finally {
-        setStationsLoading(false);
-      }
-    };
-
-    loadStations();
-  }, []);
 
   const handleFileChange = (e) => {
     const { name, files: selectedFiles } = e.target;
     if (selectedFiles && selectedFiles.length > 0) {
       if (name === 'vehicle_photos') {
-        setFiles(prev => ({ ...prev, [name]: selectedFiles })); // FileList pour multiple
+        setFiles(prev => ({ ...prev, [name]: selectedFiles }));
       } else {
         setFiles(prev => ({ ...prev, [name]: selectedFiles[0] }));
-      }
-
-      if (errors[name]) {
-        setErrors((prev) => {
-          const newErrors = { ...prev };
-          delete newErrors[name];
-          return newErrors;
-        });
       }
     }
   };
 
+  useEffect(() => {
+    const loadStations = async () => {
+      try {
+        setStationsLoading(true);
+        const data = await fetchRelayPoints({ limit: 100 });
+        const items = Array.isArray(data) ? data : (data.data || []);
+        setStations(items);
+      } catch (err) {
+        console.warn('Erreur chargement stations:', err);
+      } finally {
+        setStationsLoading(false);
+      }
+    };
+    loadStations();
+  }, []);
+
+  const isEditMode = !!transporter;
+  const pageTitle = isEditMode ? 'Modifier le transporteur' : 'Ajouter un transporteur';
+  const subTitle = isEditMode
+    ? `Transporteurs > Transporteur N° ${transporter.id}`
+    : 'Transporteurs > Ajouter un transporteur';
+
+  // Colors based on Figma: Edit = Gold/Yellow, Add = Teal/Blue
+  const primaryButtonClass = isEditMode
+    ? 'bg-[#E8B44D] hover:bg-[#D9A53C]'
+    : 'bg-[#305669] hover:bg-[#1F3A4A]';
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-lg max-w-2xl w-full my-8">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-lg z-10">
-          <h2 className="text-xl font-bold text-gray-900">
-            {transporter ? 'Modifier le transporteur' : 'Ajouter un transporteur'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-lg transition"
-            type="button"
-          >
-            <X className="h-5 w-5 text-gray-600" />
+    <div className="bg-gray-50 min-h-screen flex flex-col">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
+        <div className="flex items-center gap-4">
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition">
+            <ArrowLeft className="h-5 w-5 text-gray-600" />
           </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{pageTitle}</h1>
+            <p className="text-sm text-gray-500">{subTitle}</p>
+          </div>
         </div>
+      </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {errors.submit && (
-            <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
-              {errors.submit}
+      <div className="flex-1 p-6 md:p-8 max-w-5xl mx-auto w-full space-y-8 pb-20">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-1">
+              {/* Icon placeholder if needed, image shows a simple truck icon or text */}
+              <span className="text-xl">🚛</span>
             </div>
-          )}
+            <h2 className="text-xl font-bold text-gray-900">Informations générales</h2>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Info Perso */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-gray-900 border-b pb-2">Informations Personnelles</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+            {/* Row 1 */}
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">Nom complet <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                name="full_name"
+                value={formData.full_name}
+                onChange={handleChange}
+                placeholder="Ex: Transport ABC"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:outline-none transition"
+              />
+              {errors.full_name && <p className="text-red-500 text-xs">{errors.full_name}</p>}
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet *</label>
-                <input
-                  type="text"
-                  name="full_name"
-                  value={formData.full_name}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:outline-none"
-                />
-                {errors.full_name && <p className="text-red-500 text-xs mt-1">{errors.full_name}</p>}
-              </div>
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">Type de véhicule <span className="text-red-500">*</span></label>
+              <select
+                name="vehicle_type"
+                value={formData.vehicle_type}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:outline-none transition bg-white"
+              >
+                <option value="">Sélectionner</option>
+                <option value="moto">Moto</option>
+                <option value="voiture">Voiture</option>
+                <option value="camion">Camion</option>
+                <option value="fourgon">Fourgon</option>
+              </select>
+              {errors.vehicle_type && <p className="text-red-500 text-xs">{errors.vehicle_type}</p>}
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:outline-none"
-                />
-                {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-              </div>
+            {/* Row 2 */}
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">Email <span className="text-red-500">*</span></label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="contact@example.com"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:outline-none transition"
+              />
+              {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone *</label>
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">Téléphone <span className="text-red-500">*</span></label>
+              <div className="flex">
+                <div className="bg-gray-50 border border-gray-300 border-r-0 rounded-l-lg px-3 flex items-center gap-2">
+                  <span>🇸🇳</span>
+                  <span className="text-gray-500 font-medium">+221</span>
+                </div>
                 <input
                   type="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:outline-none"
+                  placeholder="77 123 45 67"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:outline-none transition"
                 />
-                {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
               </div>
+              {errors.phone && <p className="text-red-500 text-xs">{errors.phone}</p>}
             </div>
 
-            {/* Info Véhicule */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-gray-900 border-b pb-2">Informations Véhicule</h3>
+            {/* Row 3 - Full Width */}
+            <div className="md:col-span-2 space-y-1">
+              <label className="block text-sm font-medium text-gray-700">Numéro de véhicule (Immatriculation) <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                name="vehicle_plate"
+                value={formData.vehicle_plate}
+                onChange={handleChange}
+                placeholder="SN-123-AB"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:outline-none transition"
+              />
+              {errors.vehicle_plate && <p className="text-red-500 text-xs">{errors.vehicle_plate}</p>}
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
-                <select
-                  name="vehicle_type"
-                  value={formData.vehicle_type}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:outline-none"
-                >
-                  <option value="moto">Moto</option>
-                  <option value="voiture">Voiture</option>
-                  <option value="camion">Camion</option>
-                  <option value="fourgon">Fourgon</option>
-                </select>
-              </div>
-
-              {/* Status (seulement en modification pour l'instant) */}
-              {transporter && (
+            {/* Extra fields below (Station, Insurance, Files) - keeping them accessible but matching style */}
+            <div className="md:col-span-2 pt-4 border-t border-gray-100">
+              <h3 className="font-semibold text-gray-900 mb-4">Informations complémentaires</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Statut</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Point de retrait (Station)</label>
                   <select
-                    name="status"
-                    value={formData.status}
+                    name="station_id"
+                    value={formData.station_id}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:outline-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none bg-white"
                   >
-                    <option value="active">Actif</option>
-                    <option value="inactive">Inactif</option>
-                    <option value="banned">Banni</option>
+                    <option value="">Sélectionner un point...</option>
+                    {stations.map(s => (
+                      <option key={s.id} value={s.id}>{s.name || s.title || `#${s.id}`}</option>
+                    ))}
                   </select>
                 </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Point / Station *</label>
-                <select
-                  name="station_id"
-                  value={formData.station_id}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:outline-none"
-                >
-                  {stationsLoading ? (
-                    <option value="" disabled>Chargement des points...</option>
-                  ) : stations.length === 0 ? (
-                    <option value="" disabled>Aucun point disponible</option>
-                  ) : (
-                    <>
-                      <option value="">Sélectionner un point...</option>
-                      {stations.map((s) => (
-                        <option key={s.id} value={s.id}>{s.name || s.title || `#${s.id}`}</option>
-                      ))}
-                    </>
-                  )}
-                </select>
-                {errors.station_id && <p className="text-red-500 text-xs mt-1">{errors.station_id}</p>}
-                {stationsError && <p className="text-red-500 text-xs mt-1">{stationsError}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Immatriculation</label>
-                <input
-                  type="text"
-                  name="vehicle_plate"
-                  value={formData.vehicle_plate}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Assurance</label>
-                <input
-                  type="text"
-                  name="insurer_name"
-                  placeholder="Nom assureur"
-                  value={formData.insurer_name}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Expiration Assurance</label>
-                <input
-                  type="date"
-                  name="insurance_expires_at"
-                  value={formData.insurance_expires_at}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#305669] focus:outline-none"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Assurance</label>
+                  <input
+                    type="date"
+                    name="insurance_expires_at"
+                    value={formData.insurance_expires_at}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none"
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Documents */}
-          <div className="space-y-4 border-t pt-4">
-            <h3 className="font-semibold text-gray-900">Documents Requis</h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">CNI Recto *</label>
-                <div className="relative border border-gray-300 rounded-lg p-2 bg-gray-50 hover:bg-gray-100 transition">
-                  <input
-                    type="file"
-                    name="id_card_front"
-                    onChange={handleFileChange}
-                    accept="image/*,.pdf"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-                  <div className="flex items-center gap-2 pointer-events-none">
-                    <FileText className="h-5 w-5 text-gray-400" />
-                    <span className="text-sm text-gray-600 truncate">
-                      {files.id_card_front ? files.id_card_front.name : 'Choisir un fichier...'}
-                    </span>
+            {/* File Uploads - Condensed */}
+            <div className="md:col-span-2 pt-4 border-t border-gray-100">
+              <h3 className="font-semibold text-gray-900 mb-4">Documents</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Helper for file inputs */}
+                {['id_card_front', 'id_card_back', 'vehicle_registration_card'].map((field) => (
+                  <div key={field} className="border border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 transition relative">
+                    <input
+                      type="file"
+                      name={field}
+                      onChange={handleFileChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <Upload className="h-6 w-6 text-gray-400 mx-auto mb-2" />
+                    <p className="text-xs text-gray-600 font-medium truncate">
+                      {files[field] ? files[field].name : field.replace(/_/g, ' ')}
+                    </p>
                   </div>
-                </div>
-                {errors.id_card_front && <p className="text-red-500 text-xs mt-1">{errors.id_card_front}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">CNI Verso *</label>
-                <div className="relative border border-gray-300 rounded-lg p-2 bg-gray-50 hover:bg-gray-100 transition">
-                  <input
-                    type="file"
-                    name="id_card_back"
-                    onChange={handleFileChange}
-                    accept="image/*,.pdf"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-                  <div className="flex items-center gap-2 pointer-events-none">
-                    <FileText className="h-5 w-5 text-gray-400" />
-                    <span className="text-sm text-gray-600 truncate">
-                      {files.id_card_back ? files.id_card_back.name : 'Choisir un fichier...'}
-                    </span>
-                  </div>
-                </div>
-                {errors.id_card_back && <p className="text-red-500 text-xs mt-1">{errors.id_card_back}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Carte Grise</label>
-                <div className="relative border border-gray-300 rounded-lg p-2 bg-gray-50 hover:bg-gray-100 transition">
-                  <input
-                    type="file"
-                    name="vehicle_registration_card"
-                    onChange={handleFileChange}
-                    accept="image/*,.pdf"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-                  <div className="flex items-center gap-2 pointer-events-none">
-                    <FileText className="h-5 w-5 text-gray-400" />
-                    <span className="text-sm text-gray-600 truncate">
-                      {files.vehicle_registration_card ? files.vehicle_registration_card.name : 'Choisir un fichier...'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Photos Véhicule</label>
-                <div className="relative border border-gray-300 rounded-lg p-2 bg-gray-50 hover:bg-gray-100 transition">
+                ))}
+                {/* Photos */}
+                <div className="border border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 transition relative">
                   <input
                     type="file"
                     name="vehicle_photos"
-                    onChange={handleFileChange}
-                    accept="image/*"
                     multiple
+                    onChange={handleFileChange}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
-                  <div className="flex items-center gap-2 pointer-events-none">
-                    <ImageIcon className="h-5 w-5 text-gray-400" />
-                    <span className="text-sm text-gray-600 truncate">
-                      {files.vehicle_photos && files.vehicle_photos.length > 0
-                        ? `${files.vehicle_photos.length} fichier(s)`
-                        : 'Choisir des photos...'}
-                    </span>
-                  </div>
+                  <ImageIcon className="h-6 w-6 text-gray-400 mx-auto mb-2" />
+                  <p className="text-xs text-gray-600 font-medium truncate">
+                    {files.vehicle_photos ? `${files.vehicle_photos.length} photos` : 'Photos Véhicule'}
+                  </p>
                 </div>
               </div>
             </div>
+
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-gray-100">
+          {/* Action Buttons */}
+          <div className="mt-8 flex gap-4">
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className={`px-8 py-3 text-white rounded-[20px] font-bold text-lg transition shadow-sm disabled:opacity-70 ${primaryButtonClass}`}
+            >
+              {isSubmitting ? 'Traitement...' : isEditMode ? 'Mettre à jour' : 'Enregistrer'}
+            </button>
+
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition"
+              className="px-8 py-3 bg-white border border-gray-200 text-gray-700 rounded-[20px] font-bold text-lg hover:bg-gray-50 transition shadow-sm"
             >
               Annuler
             </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 px-4 py-2.5 bg-[#305669] text-white rounded-lg font-medium hover:bg-[#1F3A4A] transition disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {isSubmitting ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Traitement...
-                </>
-              ) : (transporter ? 'Modifier' : 'Ajouter le transporteur')}
-            </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

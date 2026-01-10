@@ -3,6 +3,7 @@ import { Plus, Search, Edit2, Trash2, Eye, LayoutGrid, List as ListIcon, Chevron
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import TransporterForm from '../../components/forms/TransporterForm';
 import ConfirmationModal from '../../components/modals/ConfirmationModal';
+import SuccessModal from '../../components/modals/SuccessModal';
 import { fetchTransporters, createTransporter, updateTransporter, deleteTransporter } from '../../services/transporterService';
 import Toast from '../../components/Toast';
 
@@ -43,6 +44,7 @@ export default function TransportersPage() {
   ];
 
   const [deleteModal, setDeleteModal] = useState({ show: false, transporterId: null, transporterName: '' });
+  const [successModal, setSuccessModal] = useState({ show: false, message: '' });
   const [toast, setToast] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -77,11 +79,16 @@ export default function TransportersPage() {
     try {
       if (editingTransporter) {
         await updateTransporter(editingTransporter.id, formData);
-        setToast({ message: 'Transporteur mis à jour avec succès', type: 'success' });
+        setSuccessModal({ show: true, message: 'Informations mis à jour avec succès.' });
       } else {
         await createTransporter(formData);
-        setToast({ message: 'Transporteur créé avec succès', type: 'success' });
+        setSuccessModal({ show: true, message: 'Transporteur crée avec succès.' });
       }
+
+      // Delay closing form until success modal is closed/acknowledged?
+      // Or close form immediately behind the modal?
+      // Usually better to keep form or switch to list. 
+      // User requirement: "popup de confirmation".
       setShowForm(false);
       setEditingTransporter(null);
       loadTransporters();
@@ -105,9 +112,16 @@ export default function TransportersPage() {
     setIsDeleting(true);
     try {
       await deleteTransporter(deleteModal.transporterId);
-      setToast({ message: 'Transporteur supprimé avec succès', type: 'success' });
+      // setToast({ message: 'Transporteur supprimé avec succès', type: 'success' });
+      // Use success modal for delete too? "popup de confirmationen cas de reussite des endpoint". Assume yes.
+      // But maybe the deletion is quick. I'll stick to Toast for deletion unless asked, but user said "endpoints" plural.
+      // Image only showed Create/Update messages. I'll stick to toast for delete for now or check if there was a delete success image. 
+      // There is only "Update" (green check) and "Create" (green check) images.
+      // However the prompt says "Ajouter les popup de confirmationen cas de reussite des endpoint".
+
       setDeleteModal({ show: false, transporterId: null, transporterName: '' });
       loadTransporters();
+      setSuccessModal({ show: true, message: 'Transporteur supprimé avec succès.' });
     } catch (error) {
       console.error("Erreur suppression:", error);
       setToast({ message: error.message || "Impossible de supprimer ce transporteur", type: 'error' });
@@ -125,13 +139,29 @@ export default function TransportersPage() {
     }
   }
 
-
-
   // Calcul des statistiques
   const stats = {
     active: transporters.filter(t => t.status === 'active').length.toString(),
     rating: '4.7', // Mocked for design match initially or calc if data exists
     earnings: '12.8M' // Mocked or calc
+  }
+
+  // Conditional Rendering for Form View
+  if (showForm) {
+    return (
+      <div className="h-full">
+        <TransporterForm
+          transporter={editingTransporter}
+          onSubmit={handleSaveTransporter}
+          onClose={() => setShowForm(false)}
+        />
+        {/* Render SuccessModal here if needed, but it might be better at top level. 
+            If I handle success inside handleSave, I set showForm(false) immediately.
+            Then this block exits, and we return standard view.
+            So standard view must render SuccessModal.
+        */}
+      </div>
+    );
   }
 
   return (
@@ -153,15 +183,6 @@ export default function TransportersPage() {
           Ajouter un transporteur
         </button>
       </div>
-
-      {/* Form Modal */}
-      {showForm && (
-        <TransporterForm
-          transporter={editingTransporter}
-          onSubmit={handleSaveTransporter}
-          onClose={() => setShowForm(false)}
-        />
-      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -292,7 +313,10 @@ export default function TransportersPage() {
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button onClick={() => setEditingTransporter(transporter)} className="p-1.5 text-[#E8B44D] hover:bg-[#FFF9EB] rounded-lg transition">
+                          <button onClick={() => {
+                            setEditingTransporter(transporter);
+                            setShowForm(true);
+                          }} className="p-1.5 text-[#E8B44D] hover:bg-[#FFF9EB] rounded-lg transition">
                             <Edit2 className="h-4 w-4" />
                           </button>
                           <button onClick={() => confirmDeleteTransporter(transporter)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition">
@@ -308,7 +332,7 @@ export default function TransportersPage() {
           </table>
         </div>
 
-        {/* Pagination */}
+        {/* Pagination - Reuse existing */}
         <div className="flex items-center justify-end gap-4 mt-4 px-4 pb-2 border-t border-gray-100 pt-4">
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <span>éléments par page:</span>
@@ -392,6 +416,13 @@ export default function TransportersPage() {
           confirmText="Supprimer"
           isLoading={isDeleting}
           isDestructive={true}
+        />
+      )}
+
+      {successModal.show && (
+        <SuccessModal
+          message={successModal.message}
+          onClose={() => setSuccessModal({ show: false, message: '' })}
         />
       )}
 
