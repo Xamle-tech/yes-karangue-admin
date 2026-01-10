@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, Eye, LayoutGrid, List as ListIcon, ChevronDown, Truck, Bike, Car, Star, Download, MoreVertical } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import TransporterForm from '../../components/forms/TransporterForm';
+import TransporterDetails from '../../components/TransporterDetails';
 import ConfirmationModal from '../../components/modals/ConfirmationModal';
 import SuccessModal from '../../components/modals/SuccessModal';
 import { fetchTransporters, createTransporter, updateTransporter, deleteTransporter } from '../../services/transporterService';
@@ -24,6 +25,7 @@ export default function TransportersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingTransporter, setEditingTransporter] = useState(null);
+  const [viewingTransporter, setViewingTransporter] = useState(null);
   const [viewMode, setViewMode] = useState('list');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -122,6 +124,10 @@ export default function TransportersPage() {
       setDeleteModal({ show: false, transporterId: null, transporterName: '' });
       loadTransporters();
       setSuccessModal({ show: true, message: 'Transporteur supprimé avec succès.' });
+      // If we were viewing details of deleted item, go back to list
+      if (viewingTransporter && viewingTransporter.id === deleteModal.transporterId) {
+        setViewingTransporter(null);
+      }
     } catch (error) {
       console.error("Erreur suppression:", error);
       setToast({ message: error.message || "Impossible de supprimer ce transporteur", type: 'error' });
@@ -160,6 +166,23 @@ export default function TransportersPage() {
             Then this block exits, and we return standard view.
             So standard view must render SuccessModal.
         */}
+      </div>
+    );
+  }
+
+  if (viewingTransporter) {
+    return (
+      <div className="h-full">
+        <TransporterDetails
+          transporter={viewingTransporter}
+          onBack={() => setViewingTransporter(null)}
+          onEdit={(t) => {
+            setViewingTransporter(null);
+            setEditingTransporter(t);
+            setShowForm(true);
+          }}
+          onDelete={(t) => confirmDeleteTransporter(t)}
+        />
       </div>
     );
   }
@@ -313,6 +336,9 @@ export default function TransportersPage() {
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <button onClick={() => setViewingTransporter(transporter)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition">
+                            <Eye className="h-4 w-4" />
+                          </button>
                           <button onClick={() => {
                             setEditingTransporter(transporter);
                             setShowForm(true);
