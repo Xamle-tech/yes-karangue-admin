@@ -177,23 +177,11 @@ export default function ClientsPage() {
     return (
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
-            <p className="text-gray-600 mt-1">
-              Gérez tous les clients (expéditeurs et destinataires)
-            </p>
-          </div>
-          <button
-            onClick={() => {
-              setEditingClient(null);
-              setShowForm(true);
-            }}
-            className="flex items-center gap-2 bg-[#E8B44D] text-white px-5 py-2.5 rounded-lg hover:bg-[#D9A53C] transition font-medium shadow-sm"
-          >
-            <Plus className="h-5 w-5" />
-            Ajouter un client
-          </button>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
+          <p className="text-gray-600 mt-1">
+            Gérez tous les clients (expéditeurs et destinataires)
+          </p>
         </div>
 
         {/* Stats Cards */}
@@ -321,7 +309,6 @@ export default function ClientsPage() {
                   <tr>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Nom</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Téléphone</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Email</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">App</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Activité</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Statut</th>
@@ -347,7 +334,6 @@ export default function ClientsPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">{client.phone || 'N/A'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{client.email || 'N/A'}</td>
                       <td className="px-6 py-4">
                         {client.hasApp ? (
                           <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-50 text-green-700 text-xs font-medium border border-green-100">
@@ -405,7 +391,7 @@ export default function ClientsPage() {
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                      <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
                         Aucun client trouvé
                       </td>
                     </tr>

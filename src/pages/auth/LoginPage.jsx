@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import logo from '../../icons/logo.png';
-import backgroundImage from '../../assets/images/background.png';
 import { login, saveAuthData } from '../../services/authService';
 
 export default function LoginPage() {
@@ -49,15 +48,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      className="min-h-screen relative overflow-hidden flex flex-col items-center justify-center p-4"
-      style={{
-        backgroundImage: `url(${backgroundImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      }}
-    >
+    <div className="min-h-screen relative overflow-hidden bg-[#F5F5F0] flex flex-col items-center justify-center p-4">
+      {/* Subtle Background Shapes */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-white/30 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gray-200/30 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
+        <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-gray-100/40 rounded-full blur-2xl"></div>
+      </div>
 
       {/* Main Content */}
       <div className="relative z-10 w-full max-w-md">

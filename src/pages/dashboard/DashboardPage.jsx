@@ -281,25 +281,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-
-      {/* System Health */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-sm text-gray-600">Serveurs actifs</p>
-          <p className="text-2xl font-bold text-green-600 mt-2">4/4</p>
-          <p className="text-xs text-gray-500 mt-1">Tous les serveurs fonctionnent correctement</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-sm text-gray-600">Temps de réponse API</p>
-          <p className="text-2xl font-bold text-blue-600 mt-2">127 ms</p>
-          <p className="text-xs text-gray-500 mt-1">Performance optimale</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-sm text-gray-600">Espace de stockage</p>
-          <p className="text-2xl font-bold text-purple-600 mt-2">65%</p>
-          <p className="text-xs text-gray-500 mt-1">2.6 TB utilisés sur 4 TB</p>
-        </div>
-      </div>
     </div>
   );
 }
