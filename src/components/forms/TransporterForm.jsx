@@ -6,7 +6,6 @@ import { fetchTransporters } from '../../services/transporterService';
 export default function TransporterForm({ transporter, onSubmit, onClose }) {
   const [formData, setFormData] = useState({
     full_name: transporter?.name || '',
-    email: transporter?.email || '',
     phone: transporter?.phone || '',
     vehicle_type: transporter?.transporter_profile?.vehicle_type || 'voiture',
     vehicle_plate: transporter?.transporter_profile?.vehicle_plate || '',
@@ -32,7 +31,6 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
   const validateForm = () => {
     const newErrors = {};
     if (!formData.full_name) newErrors.full_name = 'Le nom complet est requis';
-    if (!formData.email) newErrors.email = 'L\'email est requis';
     if (!formData.phone) newErrors.phone = 'Le téléphone est requis';
     if (!formData.vehicle_type) newErrors.vehicle_type = 'Le type de véhicule est requis';
     if (!formData.vehicle_plate) newErrors.vehicle_plate = 'Le numéro de véhicule est requis';
@@ -81,9 +79,19 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
         }
       }
 
+      // 🐛 DEBUG: Log FormData contents
+      console.log('📤 Submitting transporter with FormData:');
+      for (let [key, value] of data.entries()) {
+        if (value instanceof File) {
+          console.log(`  ${key}:`, value.name, `(${value.size} bytes)`);
+        } else {
+          console.log(`  ${key}:`, value);
+        }
+      }
+
       await onSubmit(data);
     } catch (error) {
-      console.error('Erreur soumission:', error);
+      console.error('❌ Erreur soumission transporteur:', error);
       setErrors({ submit: error.message || 'Une erreur est survenue' });
     } finally {
       setIsSubmitting(false);
@@ -195,20 +203,6 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
                 <option value="fourgon">Fourgon</option>
               </select>
               {errors.vehicle_type && <p className="text-red-500 text-xs">{errors.vehicle_type}</p>}
-            </div>
-
-            {/* Row 2 */}
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700">Email <span className="text-red-500">*</span></label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="contact@example.com"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:outline-none transition"
-              />
-              {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
             </div>
 
             <div className="space-y-1">

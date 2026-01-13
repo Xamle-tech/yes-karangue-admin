@@ -74,7 +74,7 @@ export default function TransportersPage() {
   const filteredTransporters = transporters.filter(
     (transporter) =>
       (transporter.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (transporter.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+      (transporter.phone || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSaveTransporter = async (formData) => {
@@ -290,7 +290,6 @@ export default function TransportersPage() {
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Nom du point</th>
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Véhicule</th>
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Téléphone</th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Email</th>
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Livraisons</th>
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Revenus</th>
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Statut</th>
@@ -299,9 +298,9 @@ export default function TransportersPage() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading ? (
-                <tr><td colSpan="8" className="px-6 py-8 text-center text-gray-500">Chargement...</td></tr>
+                <tr><td colSpan="7" className="px-6 py-8 text-center text-gray-500">Chargement...</td></tr>
               ) : filteredTransporters.length === 0 ? (
-                <tr><td colSpan="8" className="px-6 py-8 text-center text-gray-500">Aucun transporteur trouvé</td></tr>
+                <tr><td colSpan="7" className="px-6 py-8 text-center text-gray-500">Aucun transporteur trouvé</td></tr>
               ) : (
                 filteredTransporters.map((transporter) => {
                   const profile = transporter.transporter_profile || {};
@@ -326,7 +325,6 @@ export default function TransportersPage() {
                         <span className="text-sm font-semibold text-gray-900">{profile.vehicle_plate || 'SN-XXX-XXX'}</span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{transporter.phone || '+221 -- --- -- --'}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{transporter.email || 'email@example.com'}</td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{transporter.deliveries_count || Math.floor(Math.random() * 300)}</td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{transporter.total_earnings ? `${transporter.total_earnings}F` : `${Math.floor(Math.random() * 5000)}K`}</td>
                       <td className="px-4 py-4 whitespace-nowrap">
