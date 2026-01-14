@@ -115,6 +115,11 @@ export default function AgentShipmentForm({ onSubmit, onClose, isLoading }) {
 
       // Ajouter toutes les photos du colis
       if (formData.package_photos && formData.package_photos.length > 0) {
+        // IMPORTANT: Pour compatibilité avec l'API existante, on envoie la première photo en tant que 'package_photo'
+        // Cela garantit que la génération de la feuille de route fonctionne
+        submitData.append('package_photo', formData.package_photos[0]);
+
+        // Optionnel: Envoyer aussi toutes les photos si le backend supporte package_photos[]
         formData.package_photos.forEach((photo) => {
           submitData.append('package_photos[]', photo);
         });
