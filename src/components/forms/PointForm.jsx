@@ -10,43 +10,25 @@ export default function PointForm({ point, onSubmit, onCancel }) {
     const [formData, setFormData] = useState({
         name: point?.name || '',
         address: point?.address || '',
-        type: point?.type || 'DEPOT_RETRAIT',
+        type: 'DEPOT_RETRAIT', // Fixed value - all points are both depot and retrait
         main_phone: point?.main_phone || point?.phone || '',
         manager_user_id: point?.manager_user_id || '',
-        // Additional Manager Info for display or secondary/separate saving if API requires
         manager_name: point?.manager || '',
-        manager_phone: point?.managerPhone || '',
-
         is_active: point?.is_active !== undefined ? point.is_active : true,
-        // Hours not currently in basic schema but placeholder for UI
     });
 
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [managers, setManagers] = useState([]);
     const [loadingManagers, setLoadingManagers] = useState(false);
-    const [typeOptions, setTypeOptions] = useState([
-        { value: 'DEPOT', label: 'Dépôt uniquement' },
-        { value: 'RETRAIT', label: 'Retrait uniquement' },
-        { value: 'DEPOT_RETRAIT', label: 'Dépôt et Retrait' },
-    ]);
-    const [loadingTypes, setLoadingTypes] = useState(false);
 
     // Charger les types de points relais et les managers depuis l'API
     useEffect(() => {
         const loadData = async () => {
             try {
-                setLoadingTypes(true);
                 setLoadingManagers(true);
 
-                // Charger les types
-                const types = await fetchRelayPointTypes();
-                if (types && types.length > 0) {
-                    setTypeOptions(types);
-                }
-
                 // Charger les utilisateurs (managers)
-                // "charger la liste des utilisateurs (ensuite on filtre les admin)"
                 const usersResponse = await fetchUsers({ limit: 100 });
                 const usersList = Array.isArray(usersResponse) ? usersResponse : (usersResponse.data || []);
 
@@ -62,7 +44,6 @@ export default function PointForm({ point, onSubmit, onCancel }) {
             } catch (error) {
                 console.error('Erreur lors du chargement des données:', error);
             } finally {
-                setLoadingTypes(false);
                 setLoadingManagers(false);
             }
         };
@@ -74,17 +55,8 @@ export default function PointForm({ point, onSubmit, onCancel }) {
         const newErrors = {};
         if (!formData.name) newErrors.name = 'Le nom est requis';
         if (!formData.address) newErrors.address = 'L\'adresse est requise';
-        if (!formData.type) newErrors.type = 'Le type est requis';
         if (!formData.main_phone) newErrors.main_phone = 'Le téléphone est requis';
-
-        // Gestionnaire
         if (!formData.manager_user_id) newErrors.manager_user_id = 'Le gestionnaire est requis';
-        // Validation format manager_user_id (usr_XX) - REMOVED as we select from list now
-        /*
-        if (formData.manager_user_id && !formData.manager_user_id.match(/^usr_[0-9]+$/)) {
-            newErrors.manager_user_id = 'Format invalide (ex: usr_55)';
-        }
-        */
 
         return newErrors;
     };
@@ -93,22 +65,19 @@ export default function PointForm({ point, onSubmit, onCancel }) {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
 
-        // Auto-fill phone/name when manager is selected
+        // Auto-fill name when manager is selected
         if (name === 'manager_user_id') {
             const selectedManager = managers.find(m => String(m.id) === String(value));
             if (selectedManager) {
                 setFormData(prev => ({
                     ...prev,
                     manager_name: (selectedManager.name || selectedManager.full_name || selectedManager.email || '').trim(),
-                    manager_phone: selectedManager.phone || '',
                     manager_user_id: value
                 }));
             } else {
-                // Clear manager info if no manager is selected (e.g., "Sélectionner")
                 setFormData(prev => ({
                     ...prev,
                     manager_name: '',
-                    manager_phone: '',
                     manager_user_id: value
                 }));
             }
@@ -204,57 +173,7 @@ export default function PointForm({ point, onSubmit, onCancel }) {
                             {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
                         </div>
 
-                        {/* Type de point */}
-                        <div className="space-y-1">
-                            <label className="block text-sm font-medium text-gray-700">
-                                Type de point <span className="text-red-500">*</span>
-                            </label>
-                            <div className="relative">
-                                <select
-                                    name="type"
-                                    value={formData.type}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg appearance-none focus:ring-2 focus:ring-[#E8B44D]/20 focus:border-[#E8B44D] outline-none transition cursor-pointer"
-                                    disabled={loadingTypes}
-                                >
-                                    {loadingTypes ? (
-                                        <option>Chargement...</option>
-                                    ) : (
-                                        <>
-                                            <option value="">Sélectionner</option>
-                                            {typeOptions.map((option) => (
-                                                <option key={option.value} value={option.value}>
-                                                    {option.label}
-                                                </option>
-                                            ))}
-                                        </>
-                                    )}
-                                </select>
-                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                            </div>
-                            {errors.type && <p className="text-red-500 text-xs">{errors.type}</p>}
-                        </div>
 
-                        {/* Email / Adresse (Reusing Address for layout as per image) */}
-                        <div className="space-y-1">
-                            <label className="block text-sm font-medium text-gray-700">
-                                Email <span className="text-red-500">*</span>
-                            </label>
-                            {/* Note: 'email' is not in initial formData/schema, using placeholder input or mapped to a field if exists. 
-                                 Based on previous schema it wasn't there, assuming 'email' might be needed or is 'contact'
-                                 The Form image shows 'Email' but code had `main_phone`. I'll add an email field to state if needed, 
-                                 but for now let's stick to existing props or add a dummy if backend doesn't support it yet.
-                                 I'll add it to UI but it might not save if backend doesn't expect it.
-                              */}
-                            <input
-                                type="email"
-                                name="email" // Warning: Ensure backend supports this
-                                value={formData.email || ''}
-                                onChange={handleChange}
-                                placeholder="Ex: dakar-centre@yeskarangue.com"
-                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:border-[#E8B44D] outline-none transition"
-                            />
-                        </div>
 
                         {/* Adresse complète */}
                         <div className="space-y-1">
@@ -347,26 +266,7 @@ export default function PointForm({ point, onSubmit, onCancel }) {
                             {errors.manager_user_id && <p className="text-red-500 text-xs">{errors.manager_user_id}</p>}
                         </div>
 
-                        {/* Téléphone gestionnaire (Facultatif / Visuel) */}
-                        <div className="space-y-1">
-                            <label className="block text-sm font-medium text-gray-700">
-                                Téléphone gestionnaire <span className="text-red-500">*</span>
-                            </label>
-                            <div className="flex">
-                                <div className="flex items-center justify-center px-3 border border-r-0 border-gray-200 rounded-l-lg bg-gray-50">
-                                    <span role="img" aria-label="Senegal">🇸🇳</span>
-                                    <ChevronDown className="h-3 w-3 ml-1 text-gray-500" />
-                                </div>
-                                <input
-                                    type="tel"
-                                    name="manager_phone" // This is purely visual if backend doesn't take it
-                                    value={formData.manager_phone}
-                                    onChange={handleChange}
-                                    placeholder="+221 77 123 45 67"
-                                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-r-lg focus:ring-2 focus:ring-[#E8B44D]/20 focus:border-[#E8B44D] outline-none transition"
-                                />
-                            </div>
-                        </div>
+
 
                     </div>
                 </div>
