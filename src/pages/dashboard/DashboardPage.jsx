@@ -30,11 +30,14 @@ export default function DashboardPage() {
   const totalRevenue = dashboardData?.total_revenue || 0;
 
   // Calculs simples pour les pourcentages (mock simulé pour l'instant car l'API ne donne pas encore l'évolution)
+  const reportedIssues = dashboardData?.reported_issues || 72; // Nombre de problèmes signalés
+
   const stats = [
-    { icon: Package, label: 'Total Colis', value: totalShipments, change: '+12%', color: 'from-blue-50 to-blue-100', iconColor: 'text-blue-600' },
-    { icon: AlertCircle, label: 'En attente', value: pendingShipments, change: '+5%', color: 'from-yellow-50 to-yellow-100', iconColor: 'text-yellow-600' },
-    { icon: TrendingUp, label: 'Livrés', value: deliveredShipments, change: '+8%', color: 'from-green-50 to-green-100', iconColor: 'text-green-600' },
-    { icon: DollarSign, label: 'Revenus (FCFA)', value: totalRevenue.toLocaleString(), change: '+15%', color: 'from-purple-50 to-purple-100', iconColor: 'text-purple-600' },
+    { icon: Package, label: 'Colis envoyés', value: totalShipments, change: '+12%', changeColor: 'text-green-600', color: 'from-blue-50 to-blue-100', iconColor: 'text-blue-600' },
+    { icon: Package, label: 'Colis arrivés', value: deliveredShipments, change: '+8%', changeColor: 'text-green-600', color: 'from-green-50 to-green-100', iconColor: 'text-green-600' },
+    { icon: Users, label: 'Utilisateurs actifs', value: '1248', change: '+8%', changeColor: 'text-green-600', color: 'from-purple-50 to-purple-100', iconColor: 'text-purple-600' },
+    { icon: DollarSign, label: 'Revenus ce mois', value: `${(totalRevenue / 1000000).toFixed(1)}M FCFA`, change: '+15%', changeColor: 'text-green-600', color: 'from-emerald-50 to-emerald-100', iconColor: 'text-emerald-600' },
+    { icon: AlertCircle, label: 'Problèmes signalés', value: reportedIssues, change: '-2%', changeColor: 'text-red-600', color: 'from-red-50 to-red-100', iconColor: 'text-red-600' },
   ];
 
   const chartData = [
@@ -118,8 +121,8 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Grid - Updated to 5 columns */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {stats.map((stat, idx) => {
           const Icon = stat.icon;
           return (
@@ -131,7 +134,7 @@ export default function DashboardPage() {
                 <div className={`p-3 rounded-lg bg-white ${stat.iconColor}`}>
                   <Icon className="h-6 w-6" />
                 </div>
-                <span className="text-sm font-semibold text-green-600">
+                <span className={`text-sm font-semibold ${stat.changeColor}`}>
                   {stat.change}
                 </span>
               </div>
