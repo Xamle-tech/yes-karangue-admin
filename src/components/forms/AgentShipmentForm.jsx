@@ -26,9 +26,9 @@ export default function AgentShipmentForm({ onSubmit, onClose, isLoading }) {
     content_description: '',
     weight_kg: '',
     stamp_fee_fcfa: 500, // Frais de timbre définis dans les paramètres (lecture seule)
-    package_photo: null,
+    package_photos: [], // Plusieurs photos possibles
 
-    // Transporteur
+    // Transporteur (optionnel)
     transporter_id: '',
   });
 
@@ -36,7 +36,7 @@ export default function AgentShipmentForm({ onSubmit, onClose, isLoading }) {
   const [previews, setPreviews] = useState({
     sender_id_front: null,
     sender_id_back: null,
-    package_photo: null,
+    package_photos: [], // Previews pour plusieurs photos
   });
   const [transporters, setTransporters] = useState([]);
   const [loadingTransporters, setLoadingTransporters] = useState(false);
@@ -112,7 +112,15 @@ export default function AgentShipmentForm({ onSubmit, onClose, isLoading }) {
       submitData.append('content_description', formData.content_description);
       submitData.append('weight_kg', formData.weight_kg);
       if (formData.stamp_fee_fcfa) submitData.append('stamp_fee_fcfa', formData.stamp_fee_fcfa);
-      if (formData.package_photo) submitData.append('package_photo', formData.package_photo);
+
+      // Ajouter toutes les photos du colis
+      if (formData.package_photos && formData.package_photos.length > 0) {
+        formData.package_photos.forEach((photo) => {
+          submitData.append('package_photos[]', photo);
+        });
+      }
+
+      // Transporteur est optionnel
       if (formData.transporter_id) submitData.append('transporter_id', formData.transporter_id);
 
       onSubmit(submitData);
@@ -145,6 +153,40 @@ export default function AgentShipmentForm({ onSubmit, onClose, isLoading }) {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // Gestion des photos multiples du colis
+  const handlePackagePhotosChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        package_photos: [...prev.package_photos, ...files]
+      }));
+
+      // Créer des previews pour toutes les photos
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPreviews(prev => ({
+            ...prev,
+            package_photos: [...prev.package_photos, reader.result]
+          }));
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const removePackagePhoto = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      package_photos: prev.package_photos.filter((_, i) => i !== index)
+    }));
+    setPreviews(prev => ({
+      ...prev,
+      package_photos: prev.package_photos.filter((_, i) => i !== index)
+    }));
   };
 
   return (
@@ -523,20 +565,53 @@ export default function AgentShipmentForm({ onSubmit, onClose, isLoading }) {
                   </div>
                 </div>
 
-                {/* Photo du colis */}
+                {/* Photos du colis - Plusieurs photos possibles */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Photo du colis</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Photos du colis</label>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
-                    {previews.package_photo ? (
-                      <div className="relative">
-                        <img src={previews.package_photo} alt="Colis" className="w-full h-32 object-cover rounded" />
+                    {previews.package_photos && previews.package_photos.length > 0 ? (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-3 gap-4">
+                          {previews.package_photos.map((preview, index) => (
+                            <div key={index} className="relative group">
+                              <img src={preview} alt={`Colis ${index + 1}`} className="w-full h-24 object-cover rounded" />
+                              <button
+                                type="button"
+                                onClick={() => removePackagePhoto(index)}
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <label className="cursor-pointer inline-block">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handlePackagePhotosChange}
+                            className="hidden"
+                          />
+                          <button
+                            type="button"
+                            className="inline-flex items-center px-4 py-2 bg-[#E8B44D] text-white rounded-lg text-sm font-medium hover:bg-[#D9A53C] transition"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.currentTarget.parentElement.querySelector('input[type="file"]').click();
+                            }}
+                          >
+                            + Ajouter une autre photo
+                          </button>
+                        </label>
                       </div>
                     ) : (
                       <label className="cursor-pointer block">
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => handleFileChange(e, 'package_photo')}
+                          multiple
+                          onChange={handlePackagePhotosChange}
                           className="hidden"
                         />
                         <UploadIcon className="h-8 w-8 text-gray-400 mx-auto mb-3" />
@@ -548,10 +623,11 @@ export default function AgentShipmentForm({ onSubmit, onClose, isLoading }) {
                             e.currentTarget.parentElement.querySelector('input[type="file"]').click();
                           }}
                         >
-                          Choisir un fichier
+                          Choisir des fichiers
                         </button>
                         <span className="text-gray-600 text-sm mx-2">ou glisser-déposer</span>
-                        <p className="text-xs text-gray-500 mt-2">PNG, JPG jusqu'à 5MB</p>
+                        <p className="text-xs text-gray-500 mt-2">PNG, JPG jusqu'à 5MB par photo</p>
+                        <p className="text-xs text-blue-600 mt-1 font-medium">Vous pouvez sélectionner plusieurs photos</p>
                       </label>
                     )}
                   </div>
@@ -568,7 +644,7 @@ export default function AgentShipmentForm({ onSubmit, onClose, isLoading }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Transporteur
+                  Transporteur <span className="text-gray-400 text-xs">(Optionnel)</span>
                 </label>
                 <div className="relative">
                   <select
