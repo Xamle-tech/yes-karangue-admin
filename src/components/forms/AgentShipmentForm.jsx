@@ -25,7 +25,7 @@ export default function AgentShipmentForm({ onSubmit, onClose, isLoading }) {
     // Détails du colis
     content_description: '',
     weight_kg: '',
-    stamp_fee_fcfa: '',
+    stamp_fee_fcfa: 500, // Frais de timbre définis dans les paramètres (lecture seule)
     package_photo: null,
 
     // Transporteur
@@ -79,7 +79,7 @@ export default function AgentShipmentForm({ onSubmit, onClose, isLoading }) {
     // Détails du colis
     if (!formData.content_description) newErrors.content_description = 'Description requise';
     if (!formData.weight_kg || formData.weight_kg <= 0) newErrors.weight_kg = 'Poids invalide';
-    if (!formData.stamp_fee_fcfa || formData.stamp_fee_fcfa <= 0) newErrors.stamp_fee_fcfa = 'Frais de timbre requis';
+    // Note: stamp_fee_fcfa n'est plus validé car c'est une valeur fixe définie dans les paramètres
 
     return newErrors;
   };
@@ -511,23 +511,15 @@ export default function AgentShipmentForm({ onSubmit, onClose, isLoading }) {
                     )}
                   </div>
 
-                  {/* Frais de timbre */}
+                  {/* Frais de timbre - Lecture seule (définis dans les paramètres) */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Frais de timbre (FCFA) <span className="text-red-500">*</span>
+                      Frais de timbre (FCFA)
                     </label>
-                    <input
-                      type="number"
-                      name="stamp_fee_fcfa"
-                      value={formData.stamp_fee_fcfa}
-                      onChange={handleChange}
-                      placeholder="Ex: 500"
-                      min="0"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                    />
-                    {errors.stamp_fee_fcfa && (
-                      <p className="text-red-600 text-xs mt-1">{errors.stamp_fee_fcfa}</p>
-                    )}
+                    <div className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 text-sm font-medium">
+                      {formData.stamp_fee_fcfa} FCFA
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Défini dans les paramètres</p>
                   </div>
                 </div>
 
