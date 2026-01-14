@@ -291,19 +291,23 @@ export default function TransporterForm({ transporter, onSubmit, onClose }) {
                     {errors[field] && <p className="text-red-500 text-xs mt-1 text-center">{errors[field]}</p>}
                   </div>
                 ))}
-                {/* Photos */}
+                {/* Photos - Enhanced for multiple selection */}
                 <div className="border border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 transition relative">
                   <input
                     type="file"
                     name="vehicle_photos"
                     multiple
+                    accept="image/*"
                     onChange={handleFileChange}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
                   <ImageIcon className="h-6 w-6 text-gray-400 mx-auto mb-2" />
-                  <p className="text-xs text-gray-600 font-medium truncate">
-                    {files.vehicle_photos ? `${files.vehicle_photos.length} photos` : 'Photos Véhicule'}
+                  <p className="text-xs text-gray-600 font-medium">
+                    {files.vehicle_photos
+                      ? `${files.vehicle_photos.length} photo${files.vehicle_photos.length > 1 ? 's' : ''} sélectionnée${files.vehicle_photos.length > 1 ? 's' : ''}`
+                      : 'Photos Véhicule (plusieurs)'}
                   </p>
+                  <p className="text-[10px] text-gray-400 mt-1">Cliquez pour sélectionner</p>
                 </div>
               </div>
             </div>
