@@ -11,10 +11,11 @@ import TransportersPage from './pages/transporters/TransportersPage';
 import PointsPage from './pages/points/PointsPage';
 import UsersPage from './pages/users/UsersPage';
 import SettingsPage from './pages/settings/SettingsPage';
+import { isAuthenticated as checkAuth } from './services/authService';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return !!localStorage.getItem('authToken');
+    return checkAuth();
   });
 
   const handleLogin = () => {
@@ -22,15 +23,17 @@ function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userEmail');
+    // Clear all potential auth items from both storages
+    ['authToken', 'userRole', 'userEmail', 'userData', 'entrepriseName'].forEach(key => {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    });
     setIsAuthenticated(false);
   };
 
   // Composant pour gérer la redirection initiale
   const DefaultRoute = () => {
-    const userRole = localStorage.getItem('userRole') || 'admin';
+    const userRole = localStorage.getItem('userRole') || sessionStorage.getItem('userRole') || 'admin';
     const isAgent = userRole === 'agent';
     return <Navigate to={isAgent ? '/agent' : '/dashboard'} replace />;
   };

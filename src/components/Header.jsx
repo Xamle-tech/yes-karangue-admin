@@ -14,10 +14,10 @@ export default function Header({
   const [userData, setUserData] = useState(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  // Récupérer le rôle et l'email de l'utilisateur (fallback localStorage)
-  const localRole = localStorage.getItem('userRole') || 'admin';
-  const localEmail = localStorage.getItem('userEmail') || 'admin@yeskarangue.com';
-  const localName = localStorage.getItem('userName');
+  // Récupérer le rôle et l'email de l'utilisateur (fallback localStorage/sessionStorage)
+  const localRole = localStorage.getItem('userRole') || sessionStorage.getItem('userRole') || 'admin';
+  const localEmail = localStorage.getItem('userEmail') || sessionStorage.getItem('userEmail') || 'admin@yeskarangue.com';
+  const localName = localStorage.getItem('userName') || sessionStorage.getItem('userName');
 
   useEffect(() => {
     const loadUser = async () => {

@@ -34,9 +34,9 @@ export default function LoginPage() {
       // Déterminer la redirection
       const userRole = data.role;
       if (userRole === 'agent') {
-        window.location.href = '/agent';
+        navigate('/agent');
       } else {
-        window.location.href = '/dashboard';
+        navigate('/dashboard');
       }
 
     } catch (err) {

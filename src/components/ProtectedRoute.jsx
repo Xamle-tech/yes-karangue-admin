@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 
 export default function ProtectedRoute({ children, requireAdmin = false }) {
-  const userRole = localStorage.getItem('userRole') || 'admin';
+  const userRole = localStorage.getItem('userRole') || sessionStorage.getItem('userRole') || 'admin';
   const isAgent = userRole === 'agent';
 
   // Si la route requiert admin et l'utilisateur est agent, rediriger

@@ -20,7 +20,7 @@ export default function Sidebar({ collapsed }) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Récupérer le rôle de l'utilisateur
-  const userRole = localStorage.getItem('userRole') || 'admin';
+  const userRole = localStorage.getItem('userRole') || sessionStorage.getItem('userRole') || 'admin';
   const isAgent = userRole === 'agent';
 
   // Menu pour Admin (complet)
@@ -49,8 +49,10 @@ export default function Sidebar({ collapsed }) {
   };
 
   const confirmLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userRole');
+    ['authToken', 'userRole', 'userEmail', 'userData', 'entrepriseName'].forEach(key => {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    });
     window.location.href = '/login';
   };
 
