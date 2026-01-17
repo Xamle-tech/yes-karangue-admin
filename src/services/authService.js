@@ -218,6 +218,11 @@ export const saveAuthData = (authData, rememberMe = true) => {
             if (authData.user.email || authData.user.login) {
                 setStorageItem('userEmail', authData.user.email || authData.user.login, rememberMe);
             }
+
+            // Sauvegarder le nom si disponible
+            if (authData.user.name) {
+                setStorageItem('userName', authData.user.name, rememberMe);
+            }
         }
 
         // Sauvegarder le nom de l'entreprise si disponible
@@ -306,6 +311,7 @@ export const logout = async () => {
         removeStorageItem('userRole');
         removeStorageItem('userData');
         removeStorageItem('userEmail');
+        removeStorageItem('userName');
         removeStorageItem('entrepriseName');
 
         // Rediriger vers la page de connexion

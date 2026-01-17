@@ -137,49 +137,69 @@ export default function Header({
           )}
         </div>
 
-        {/* User Menu */}
-        <div className="relative">
-          <button
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition"
-          >
-            <div className="w-10 h-10 bg-gradient-to-br from-[#5B9BAD] to-[#4A8999] rounded-full flex items-center justify-center text-white font-semibold text-sm">
-              {getInitials(displayName)}
-            </div>
+        {/* User Profile & Menu */}
+        <div className="flex items-center gap-3">
+          {/* Profile Display */}
+          <div className="flex items-center gap-3">
+            {userData?.profile_picture_url ? (
+              <img
+                src={userData.profile_picture_url}
+                alt={displayName}
+                className="w-12 h-12 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-12 h-12 bg-gradient-to-br from-[#5B9BAD] to-[#4A8999] rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                {getInitials(displayName)}
+              </div>
+            )}
             <div className="hidden md:block text-left">
-              <p className="text-sm font-semibold text-gray-900">
+              <p className="text-base font-bold text-gray-900">
                 {displayName}
               </p>
-              <p className="text-xs text-gray-500">{isAgent ? 'Agent' : 'Super Admin'}</p>
+              <p className="text-sm text-gray-500">{isAgent ? 'Agent' : 'Administrateur'}</p>
             </div>
-          </button>
+          </div>
 
-          {/* User Dropdown */}
-          {showUserMenu && (
-            <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-              <div className="p-4 border-b border-gray-200">
-                <p className="font-semibold text-gray-900 text-sm truncate" title={displayEmail}>
-                  {displayEmail}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">{isAgent ? 'Agent' : 'Administrateur'}</p>
+          {/* Three-dot Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="w-10 h-10 rounded-lg hover:bg-gray-100 transition flex items-center justify-center"
+            >
+              <svg className="h-5 w-5 text-gray-700" fill="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="5" r="2" />
+                <circle cx="12" cy="12" r="2" />
+                <circle cx="12" cy="19" r="2" />
+              </svg>
+            </button>
+
+            {/* User Dropdown */}
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="p-4 border-b border-gray-200">
+                  <p className="font-semibold text-gray-900 text-sm truncate" title={displayEmail}>
+                    {displayEmail}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">{isAgent ? 'Agent' : 'Administrateur'}</p>
+                </div>
+                <div className="p-2 space-y-1">
+                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Mon compte
+                  </button>
+                </div>
+                <div className="p-2 border-t border-gray-200">
+                  <button
+                    onClick={handleLogoutClick}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded transition font-medium"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Se déconnecter
+                  </button>
+                </div>
               </div>
-              <div className="p-2 space-y-1">
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Mon compte
-                </button>
-              </div>
-              <div className="p-2 border-t border-gray-200">
-                <button
-                  onClick={handleLogoutClick}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded transition font-medium"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Se déconnecter
-                </button>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
