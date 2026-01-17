@@ -24,9 +24,8 @@ export default function Layout({ children, onLogout }) {
 
       {/* Mobile Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 md:hidden ${
-          mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 md:hidden ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         <Sidebar collapsed={false} />
       </div>
@@ -43,7 +42,7 @@ export default function Layout({ children, onLogout }) {
 
         {/* Content */}
         <main className="flex-1 overflow-auto">
-          <div className="p-4 md:p-6 max-w-7xl mx-auto">{children}</div>
+          <div className="p-4 md:p-6 mx-auto w-full">{children}</div>
         </main>
       </div>
     </div>

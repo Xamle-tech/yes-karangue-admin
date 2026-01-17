@@ -78,6 +78,10 @@ export default function Header({
         </button>
 
 
+
+        <h1 className="text-xl font-semibold text-gray-800 ml-2 hidden md:block">
+          {isAgent ? 'Gestion des colis' : 'Tableau de bord'}
+        </h1>
       </div>
 
       {/* Right Side */}
@@ -180,17 +184,19 @@ export default function Header({
       </div>
 
       {/* Logout Confirmation Modal */}
-      {showLogoutModal && (
-        <ConfirmationModal
-          title="Déconnexion"
-          message="Êtes-vous sûr de vouloir vous déconnecter ?"
-          confirmText="Se déconnecter"
-          cancelText="Annuler"
-          onConfirm={confirmLogout}
-          onCancel={() => setShowLogoutModal(false)}
-          isDestructive={true}
-        />
-      )}
-    </header>
+      {
+        showLogoutModal && (
+          <ConfirmationModal
+            title="Déconnexion"
+            message="Êtes-vous sûr de vouloir vous déconnecter ?"
+            confirmText="Se déconnecter"
+            cancelText="Annuler"
+            onConfirm={confirmLogout}
+            onCancel={() => setShowLogoutModal(false)}
+            isDestructive={true}
+          />
+        )
+      }
+    </header >
   );
 }
