@@ -68,7 +68,7 @@ export default function ReceiveShipmentModal({ onClose, onReceive }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden">
+      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <h2 className="text-xl font-bold text-gray-900">Réception de Colis</h2>
