@@ -25,7 +25,7 @@ export default function AgentDashboardPage() {
   const [shipments, setShipments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(false); // Now controls full-page view
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
   const [showReceive, setShowReceive] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -195,6 +195,17 @@ export default function AgentDashboardPage() {
     },
   ];
 
+  // Full-page views
+  if (showForm) {
+    return (
+      <AgentShipmentForm
+        onSubmit={handleAddShipment}
+        onBack={() => setShowForm(false)}
+        isLoading={isCreating}
+      />
+    );
+  }
+
   if (showDetails && selectedShipment) {
     return (
       <AgentShipmentDetails
@@ -240,13 +251,6 @@ export default function AgentDashboardPage() {
       </div>
 
       {/* Modals */}
-      {showForm && (
-        <AgentShipmentForm
-          onSubmit={handleAddShipment}
-          onClose={() => setShowForm(false)}
-          isLoading={isCreating}
-        />
-      )}
 
       {showSuccessModal && createdShipment && (
         <ShipmentSuccessModal

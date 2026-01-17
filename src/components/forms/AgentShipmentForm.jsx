@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { X, User, MapPin, Package as PackageIcon, Truck, Upload as UploadIcon, Search } from 'lucide-react';
+import { X, User, MapPin, Package as PackageIcon, Truck, Upload as UploadIcon, Search, ArrowLeft } from 'lucide-react';
 import { fetchTransporters } from '../../services/transporterService';
 
 const ID_TYPES = ['CNI', 'Passeport', 'Carte consulaire'];
 
-export default function AgentShipmentForm({ onSubmit, onClose, isLoading }) {
+export default function AgentShipmentForm({ onSubmit, onBack, isLoading }) {
   const [formData, setFormData] = useState({
     // Expéditeur
     sender_first_name: '',
@@ -195,513 +195,502 @@ export default function AgentShipmentForm({ onSubmit, onClose, isLoading }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between px-8 py-6 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#5B9BAD] rounded-lg flex items-center justify-center">
-              <PackageIcon className="h-5 w-5 text-white" />
-            </div>
+    <div className="space-y-6">
+      {/* Header with Back Navigation */}
+      <div className="flex items-center gap-4">
+        <button
+          onClick={onBack}
+          className="bg-white p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition"
+        >
+          <ArrowLeft className="h-5 w-5 text-gray-600" />
+        </button>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Enregistrer un nouveau colis</h1>
+          <p className="text-sm text-gray-500 flex items-center gap-2 mt-1">
+            Gestion des Colis <span className="text-gray-300">›</span> Enregistrer un nouveau colis
+          </p>
+        </div>
+      </div>
+
+      {/* Form Content - Scrollable */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* EXPÉDITEUR */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <User className="h-5 w-5 text-[#5B9BAD]" />
+            <h3 className="text-base font-semibold text-gray-900">Expéditeur</h3>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* Prénom */}
             <div>
-              <div className="flex items-center gap-2 text-xs text-gray-600 mb-0.5">
-                <span>Gestion des Colis</span>
-                <span>›</span>
-                <span>Enregistrer un nouveau colis</span>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Prénom <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="sender_first_name"
+                value={formData.sender_first_name}
+                onChange={handleChange}
+                placeholder="Ex: Abou"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
+              />
+              {errors.sender_first_name && (
+                <p className="text-red-600 text-xs mt-1">{errors.sender_first_name}</p>
+              )}
+            </div>
+
+            {/* Nom */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nom <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="sender_last_name"
+                value={formData.sender_last_name}
+                onChange={handleChange}
+                placeholder="Ex: Diallo"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
+              />
+              {errors.sender_last_name && (
+                <p className="text-red-600 text-xs mt-1">{errors.sender_last_name}</p>
+              )}
+            </div>
+
+            {/* Téléphone */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Téléphone <span className="text-red-500">*</span>
+              </label>
+              <div className="flex gap-2">
+                <div className="flex items-center gap-2 px-3 py-2.5 border border-gray-300 rounded-lg bg-white">
+                  <span className="text-lg">🇸🇳</span>
+                  <span className="text-sm text-gray-700">+221</span>
+                </div>
+                <input
+                  type="tel"
+                  name="sender_phone"
+                  value={formData.sender_phone}
+                  onChange={handleChange}
+                  placeholder="77 123 45 67"
+                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
+                />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Enregistrer un nouveau colis</h2>
+              {errors.sender_phone && (
+                <p className="text-red-600 text-xs mt-1">{errors.sender_phone}</p>
+              )}
+            </div>
+
+            {/* Adresse */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Adresse de l'expéditeur <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  name="sender_address"
+                  value={formData.sender_address}
+                  onChange={handleChange}
+                  placeholder="Ex: Dakar, Point E"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
+                />
+              </div>
+              {errors.sender_address && (
+                <p className="text-red-600 text-xs mt-1">{errors.sender_address}</p>
+              )}
+            </div>
+
+            {/* Type de pièce */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Type de pièce <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="sender_id_type"
+                value={formData.sender_id_type}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition bg-white text-sm"
+              >
+                {ID_TYPES.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+              {errors.sender_id_type && (
+                <p className="text-red-600 text-xs mt-1">{errors.sender_id_type}</p>
+              )}
+            </div>
+
+            {/* Numéro d'identité */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Numéro d'identité <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="sender_id_number"
+                value={formData.sender_id_number}
+                onChange={handleChange}
+                placeholder="1 904 1999 00516"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
+              />
+              {errors.sender_id_number && (
+                <p className="text-red-600 text-xs mt-1">{errors.sender_id_number}</p>
+              )}
+            </div>
+
+            {/* CNI recto */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">CNI recto</label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
+                {previews.sender_id_front ? (
+                  <div className="relative">
+                    <img src={previews.sender_id_front} alt="CNI recto" className="w-full h-24 object-cover rounded" />
+                  </div>
+                ) : (
+                  <label className="cursor-pointer block">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e, 'sender_id_front')}
+                      className="hidden"
+                    />
+                    <UploadIcon className="h-6 w-6 text-gray-400 mx-auto mb-2" />
+                    <button
+                      type="button"
+                      className="inline-flex items-center px-3 py-1.5 bg-[#E8B44D] text-white rounded-lg text-xs font-medium hover:bg-[#D9A53C] transition"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.currentTarget.parentElement.querySelector('input[type="file"]').click();
+                      }}
+                    >
+                      Choisir un fichier
+                    </button>
+                    <span className="text-gray-600 text-xs mx-2">ou glisser-déposer</span>
+                    <p className="text-xs text-gray-500 mt-1">PNG, JPG jusqu'à 5MB</p>
+                  </label>
+                )}
+              </div>
+            </div>
+
+            {/* CNI verso */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">CNI verso</label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
+                {previews.sender_id_back ? (
+                  <div className="relative">
+                    <img src={previews.sender_id_back} alt="CNI verso" className="w-full h-24 object-cover rounded" />
+                  </div>
+                ) : (
+                  <label className="cursor-pointer block">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e, 'sender_id_back')}
+                      className="hidden"
+                    />
+                    <UploadIcon className="h-6 w-6 text-gray-400 mx-auto mb-2" />
+                    <button
+                      type="button"
+                      className="inline-flex items-center px-3 py-1.5 bg-[#E8B44D] text-white rounded-lg text-xs font-medium hover:bg-[#D9A53C] transition"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.currentTarget.parentElement.querySelector('input[type="file"]').click();
+                      }}
+                    >
+                      Choisir un fichier
+                    </button>
+                    <span className="text-gray-600 text-xs mx-2">ou glisser-déposer</span>
+                    <p className="text-xs text-gray-500 mt-1">PNG, JPG jusqu'à 5MB</p>
+                  </label>
+                )}
+              </div>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-200 rounded-lg transition"
-          >
-            <X className="h-5 w-5 text-gray-600" />
-          </button>
         </div>
 
-        {/* Form Content - Scrollable */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-          <div className="p-8 space-y-6">
-            {/* EXPÉDITEUR */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <User className="h-5 w-5 text-[#5B9BAD]" />
-                <h3 className="text-base font-semibold text-gray-900">Expéditeur</h3>
-              </div>
+        {/* DESTINATAIRE */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <MapPin className="h-5 w-5 text-[#5B9BAD]" />
+            <h3 className="text-base font-semibold text-gray-900">Destinataire</h3>
+          </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                {/* Prénom */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Prénom <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="sender_first_name"
-                    value={formData.sender_first_name}
-                    onChange={handleChange}
-                    placeholder="Ex: Abou"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                  />
-                  {errors.sender_first_name && (
-                    <p className="text-red-600 text-xs mt-1">{errors.sender_first_name}</p>
-                  )}
-                </div>
-
-                {/* Nom */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nom <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="sender_last_name"
-                    value={formData.sender_last_name}
-                    onChange={handleChange}
-                    placeholder="Ex: Diallo"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                  />
-                  {errors.sender_last_name && (
-                    <p className="text-red-600 text-xs mt-1">{errors.sender_last_name}</p>
-                  )}
-                </div>
-
-                {/* Téléphone */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Téléphone <span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex gap-2">
-                    <div className="flex items-center gap-2 px-3 py-2.5 border border-gray-300 rounded-lg bg-white">
-                      <span className="text-lg">🇸🇳</span>
-                      <span className="text-sm text-gray-700">+221</span>
-                    </div>
-                    <input
-                      type="tel"
-                      name="sender_phone"
-                      value={formData.sender_phone}
-                      onChange={handleChange}
-                      placeholder="77 123 45 67"
-                      className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                    />
-                  </div>
-                  {errors.sender_phone && (
-                    <p className="text-red-600 text-xs mt-1">{errors.sender_phone}</p>
-                  )}
-                </div>
-
-                {/* Adresse */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Adresse de l'expéditeur <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <input
-                      type="text"
-                      name="sender_address"
-                      value={formData.sender_address}
-                      onChange={handleChange}
-                      placeholder="Ex: Dakar, Point E"
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                    />
-                  </div>
-                  {errors.sender_address && (
-                    <p className="text-red-600 text-xs mt-1">{errors.sender_address}</p>
-                  )}
-                </div>
-
-                {/* Type de pièce */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Type de pièce <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="sender_id_type"
-                    value={formData.sender_id_type}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition bg-white text-sm"
-                  >
-                    {ID_TYPES.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                  {errors.sender_id_type && (
-                    <p className="text-red-600 text-xs mt-1">{errors.sender_id_type}</p>
-                  )}
-                </div>
-
-                {/* Numéro d'identité */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Numéro d'identité <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="sender_id_number"
-                    value={formData.sender_id_number}
-                    onChange={handleChange}
-                    placeholder="1 904 1999 00516"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                  />
-                  {errors.sender_id_number && (
-                    <p className="text-red-600 text-xs mt-1">{errors.sender_id_number}</p>
-                  )}
-                </div>
-
-                {/* CNI recto */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">CNI recto</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
-                    {previews.sender_id_front ? (
-                      <div className="relative">
-                        <img src={previews.sender_id_front} alt="CNI recto" className="w-full h-24 object-cover rounded" />
-                      </div>
-                    ) : (
-                      <label className="cursor-pointer block">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleFileChange(e, 'sender_id_front')}
-                          className="hidden"
-                        />
-                        <UploadIcon className="h-6 w-6 text-gray-400 mx-auto mb-2" />
-                        <button
-                          type="button"
-                          className="inline-flex items-center px-3 py-1.5 bg-[#E8B44D] text-white rounded-lg text-xs font-medium hover:bg-[#D9A53C] transition"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.currentTarget.parentElement.querySelector('input[type="file"]').click();
-                          }}
-                        >
-                          Choisir un fichier
-                        </button>
-                        <span className="text-gray-600 text-xs mx-2">ou glisser-déposer</span>
-                        <p className="text-xs text-gray-500 mt-1">PNG, JPG jusqu'à 5MB</p>
-                      </label>
-                    )}
-                  </div>
-                </div>
-
-                {/* CNI verso */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">CNI verso</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
-                    {previews.sender_id_back ? (
-                      <div className="relative">
-                        <img src={previews.sender_id_back} alt="CNI verso" className="w-full h-24 object-cover rounded" />
-                      </div>
-                    ) : (
-                      <label className="cursor-pointer block">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleFileChange(e, 'sender_id_back')}
-                          className="hidden"
-                        />
-                        <UploadIcon className="h-6 w-6 text-gray-400 mx-auto mb-2" />
-                        <button
-                          type="button"
-                          className="inline-flex items-center px-3 py-1.5 bg-[#E8B44D] text-white rounded-lg text-xs font-medium hover:bg-[#D9A53C] transition"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.currentTarget.parentElement.querySelector('input[type="file"]').click();
-                          }}
-                        >
-                          Choisir un fichier
-                        </button>
-                        <span className="text-gray-600 text-xs mx-2">ou glisser-déposer</span>
-                        <p className="text-xs text-gray-500 mt-1">PNG, JPG jusqu'à 5MB</p>
-                      </label>
-                    )}
-                  </div>
-                </div>
-              </div>
+          <div className="grid grid-cols-2 gap-4">
+            {/* Prénom */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Prénom <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="recipient_first_name"
+                value={formData.recipient_first_name}
+                onChange={handleChange}
+                placeholder="Ex: Abou"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
+              />
+              {errors.recipient_first_name && (
+                <p className="text-red-600 text-xs mt-1">{errors.recipient_first_name}</p>
+              )}
             </div>
 
-            {/* DESTINATAIRE */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <MapPin className="h-5 w-5 text-[#5B9BAD]" />
-                <h3 className="text-base font-semibold text-gray-900">Destinataire</h3>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                {/* Prénom */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Prénom <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="recipient_first_name"
-                    value={formData.recipient_first_name}
-                    onChange={handleChange}
-                    placeholder="Ex: Abou"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                  />
-                  {errors.recipient_first_name && (
-                    <p className="text-red-600 text-xs mt-1">{errors.recipient_first_name}</p>
-                  )}
-                </div>
-
-                {/* Nom */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nom <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="recipient_last_name"
-                    value={formData.recipient_last_name}
-                    onChange={handleChange}
-                    placeholder="Ex: Diallo"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                  />
-                  {errors.recipient_last_name && (
-                    <p className="text-red-600 text-xs mt-1">{errors.recipient_last_name}</p>
-                  )}
-                </div>
-
-                {/* Téléphone */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Téléphone <span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex gap-2">
-                    <div className="flex items-center gap-2 px-3 py-2.5 border border-gray-300 rounded-lg bg-white">
-                      <span className="text-lg">🇸🇳</span>
-                      <span className="text-sm text-gray-700">+221</span>
-                    </div>
-                    <input
-                      type="tel"
-                      name="recipient_phone"
-                      value={formData.recipient_phone}
-                      onChange={handleChange}
-                      placeholder="77 123 45 67"
-                      className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                    />
-                  </div>
-                  {errors.recipient_phone && (
-                    <p className="text-red-600 text-xs mt-1">{errors.recipient_phone}</p>
-                  )}
-                </div>
-
-                {/* Adresse */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Adresse du destinataire <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <input
-                      type="text"
-                      name="recipient_address"
-                      value={formData.recipient_address}
-                      onChange={handleChange}
-                      placeholder="Ex: Dakar, Point E"
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                    />
-                  </div>
-                  {errors.recipient_address && (
-                    <p className="text-red-600 text-xs mt-1">{errors.recipient_address}</p>
-                  )}
-                </div>
-              </div>
+            {/* Nom */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nom <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="recipient_last_name"
+                value={formData.recipient_last_name}
+                onChange={handleChange}
+                placeholder="Ex: Diallo"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
+              />
+              {errors.recipient_last_name && (
+                <p className="text-red-600 text-xs mt-1">{errors.recipient_last_name}</p>
+              )}
             </div>
 
-            {/* DÉTAILS DU COLIS */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <PackageIcon className="h-5 w-5 text-[#5B9BAD]" />
-                <h3 className="text-base font-semibold text-gray-900">Détails du Colis</h3>
+            {/* Téléphone */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Téléphone <span className="text-red-500">*</span>
+              </label>
+              <div className="flex gap-2">
+                <div className="flex items-center gap-2 px-3 py-2.5 border border-gray-300 rounded-lg bg-white">
+                  <span className="text-lg">🇸🇳</span>
+                  <span className="text-sm text-gray-700">+221</span>
+                </div>
+                <input
+                  type="tel"
+                  name="recipient_phone"
+                  value={formData.recipient_phone}
+                  onChange={handleChange}
+                  placeholder="77 123 45 67"
+                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
+                />
               </div>
-
-              <div className="space-y-4">
-                {/* Description */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description du contenu <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="content_description"
-                    value={formData.content_description}
-                    onChange={handleChange}
-                    placeholder="Ex: Colis électronique"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                  />
-                  {errors.content_description && (
-                    <p className="text-red-600 text-xs mt-1">{errors.content_description}</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Poids */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Poids (kg) <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="weight_kg"
-                      value={formData.weight_kg}
-                      onChange={handleChange}
-                      placeholder="Ex: 25"
-                      step="0.1"
-                      min="0"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
-                    />
-                    {errors.weight_kg && (
-                      <p className="text-red-600 text-xs mt-1">{errors.weight_kg}</p>
-                    )}
-                  </div>
-
-                  {/* Frais de timbre - Lecture seule (définis dans les paramètres) */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Frais de timbre (FCFA)
-                    </label>
-                    <div className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 text-sm font-medium">
-                      {formData.stamp_fee_fcfa} FCFA
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">Défini dans les paramètres</p>
-                  </div>
-                </div>
-
-                {/* Photos du colis - Plusieurs photos possibles */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Photos du colis</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
-                    {previews.package_photos && previews.package_photos.length > 0 ? (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-3 gap-4">
-                          {previews.package_photos.map((preview, index) => (
-                            <div key={index} className="relative group">
-                              <img src={preview} alt={`Colis ${index + 1}`} className="w-full h-24 object-cover rounded" />
-                              <button
-                                type="button"
-                                onClick={() => removePackagePhoto(index)}
-                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                        <label className="cursor-pointer inline-block">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handlePackagePhotosChange}
-                            className="hidden"
-                          />
-                          <button
-                            type="button"
-                            className="inline-flex items-center px-4 py-2 bg-[#E8B44D] text-white rounded-lg text-sm font-medium hover:bg-[#D9A53C] transition"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.currentTarget.parentElement.querySelector('input[type="file"]').click();
-                            }}
-                          >
-                            + Ajouter une autre photo
-                          </button>
-                        </label>
-                      </div>
-                    ) : (
-                      <label className="cursor-pointer block">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={handlePackagePhotosChange}
-                          className="hidden"
-                        />
-                        <UploadIcon className="h-8 w-8 text-gray-400 mx-auto mb-3" />
-                        <button
-                          type="button"
-                          className="inline-flex items-center px-4 py-2 bg-[#E8B44D] text-white rounded-lg text-sm font-medium hover:bg-[#D9A53C] transition"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.currentTarget.parentElement.querySelector('input[type="file"]').click();
-                          }}
-                        >
-                          Choisir des fichiers
-                        </button>
-                        <span className="text-gray-600 text-sm mx-2">ou glisser-déposer</span>
-                        <p className="text-xs text-gray-500 mt-2">PNG, JPG jusqu'à 5MB par photo</p>
-                        <p className="text-xs text-blue-600 mt-1 font-medium">Vous pouvez sélectionner plusieurs photos</p>
-                      </label>
-                    )}
-                  </div>
-                </div>
-              </div>
+              {errors.recipient_phone && (
+                <p className="text-red-600 text-xs mt-1">{errors.recipient_phone}</p>
+              )}
             </div>
 
-            {/* SÉLECTION DU TRANSPORTEUR */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <Truck className="h-5 w-5 text-[#5B9BAD]" />
-                <h3 className="text-base font-semibold text-gray-900">Sélection du Transporteur</h3>
+            {/* Adresse */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Adresse du destinataire <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  name="recipient_address"
+                  value={formData.recipient_address}
+                  onChange={handleChange}
+                  placeholder="Ex: Dakar, Point E"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
+                />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Transporteur <span className="text-gray-400 text-xs">(Optionnel)</span>
-                </label>
-                <div className="relative">
-                  <select
-                    name="transporter_id"
-                    value={formData.transporter_id}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition bg-white text-sm"
-                    disabled={loadingTransporters}
-                  >
-                    <option value="">
-                      {loadingTransporters ? 'Chargement...' : 'Choisir un transporteur'}
-                    </option>
-                    {transporters.map(transporter => (
-                      <option key={transporter.id} value={transporter.id}>
-                        {transporter.name || transporter.company_name} - {transporter.vehicle_type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-4">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1 px-6 py-3 bg-[#0D9488] text-white rounded-lg font-semibold hover:bg-[#0F766E] transition shadow-sm text-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isLoading ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>Génération...</span>
-                  </>
-                ) : (
-                  'Générer la lettre de route'
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-8 py-3 border-2 border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition text-sm"
-              >
-                Annuler
-              </button>
+              {errors.recipient_address && (
+                <p className="text-red-600 text-xs mt-1">{errors.recipient_address}</p>
+              )}
             </div>
           </div>
-        </form>
-      </div>
+        </div>
+
+        {/* DÉTAILS DU COLIS */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <PackageIcon className="h-5 w-5 text-[#5B9BAD]" />
+            <h3 className="text-base font-semibold text-gray-900">Détails du Colis</h3>
+          </div>
+
+          <div className="space-y-4">
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Description du contenu <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="content_description"
+                value={formData.content_description}
+                onChange={handleChange}
+                placeholder="Ex: Colis électronique"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
+              />
+              {errors.content_description && (
+                <p className="text-red-600 text-xs mt-1">{errors.content_description}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* Poids */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Poids (kg) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  name="weight_kg"
+                  value={formData.weight_kg}
+                  onChange={handleChange}
+                  placeholder="Ex: 25"
+                  step="0.1"
+                  min="0"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition text-sm"
+                />
+                {errors.weight_kg && (
+                  <p className="text-red-600 text-xs mt-1">{errors.weight_kg}</p>
+                )}
+              </div>
+
+              {/* Frais de timbre - Lecture seule (définis dans les paramètres) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Frais de timbre (FCFA)
+                </label>
+                <div className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 text-sm font-medium">
+                  {formData.stamp_fee_fcfa} FCFA
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Défini dans les paramètres</p>
+              </div>
+            </div>
+
+            {/* Photos du colis - Plusieurs photos possibles */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Photos du colis</label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
+                {previews.package_photos && previews.package_photos.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4">
+                      {previews.package_photos.map((preview, index) => (
+                        <div key={index} className="relative group">
+                          <img src={preview} alt={`Colis ${index + 1}`} className="w-full h-24 object-cover rounded" />
+                          <button
+                            type="button"
+                            onClick={() => removePackagePhoto(index)}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <label className="cursor-pointer inline-block">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handlePackagePhotosChange}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        className="inline-flex items-center px-4 py-2 bg-[#E8B44D] text-white rounded-lg text-sm font-medium hover:bg-[#D9A53C] transition"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.parentElement.querySelector('input[type="file"]').click();
+                        }}
+                      >
+                        + Ajouter une autre photo
+                      </button>
+                    </label>
+                  </div>
+                ) : (
+                  <label className="cursor-pointer block">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handlePackagePhotosChange}
+                      className="hidden"
+                    />
+                    <UploadIcon className="h-8 w-8 text-gray-400 mx-auto mb-3" />
+                    <button
+                      type="button"
+                      className="inline-flex items-center px-4 py-2 bg-[#E8B44D] text-white rounded-lg text-sm font-medium hover:bg-[#D9A53C] transition"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.currentTarget.parentElement.querySelector('input[type="file"]').click();
+                      }}
+                    >
+                      Choisir des fichiers
+                    </button>
+                    <span className="text-gray-600 text-sm mx-2">ou glisser-déposer</span>
+                    <p className="text-xs text-gray-500 mt-2">PNG, JPG jusqu'à 5MB par photo</p>
+                    <p className="text-xs text-blue-600 mt-1 font-medium">Vous pouvez sélectionner plusieurs photos</p>
+                  </label>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* SÉLECTION DU TRANSPORTEUR */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <Truck className="h-5 w-5 text-[#5B9BAD]" />
+            <h3 className="text-base font-semibold text-gray-900">Sélection du Transporteur</h3>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Transporteur <span className="text-gray-400 text-xs">(Optionnel)</span>
+            </label>
+            <div className="relative">
+              <select
+                name="transporter_id"
+                value={formData.transporter_id}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent transition bg-white text-sm"
+                disabled={loadingTransporters}
+              >
+                <option value="">
+                  {loadingTransporters ? 'Chargement...' : 'Choisir un transporteur'}
+                </option>
+                {transporters.map(transporter => (
+                  <option key={transporter.id} value={transporter.id}>
+                    {transporter.name || transporter.company_name} - {transporter.vehicle_type}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-4">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="px-6 py-3 bg-[#0D9488] text-white rounded-lg font-semibold hover:bg-[#0F766E] transition shadow-sm text-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isLoading ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Génération...</span>
+              </>
+            ) : (
+              'Générer la lettre de route'
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={onBack}
+            className="px-8 py-3 border-2 border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition text-sm"
+          >
+            Annuler
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
