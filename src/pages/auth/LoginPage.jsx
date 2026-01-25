@@ -4,7 +4,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import logo from '../../icons/logo.png';
 import { login, saveAuthData } from '../../services/authService';
 
-export default function LoginPage() {
+export default function LoginPage({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -30,6 +30,11 @@ export default function LoginPage() {
 
       // Sauvegarder les données de session
       saveAuthData(data, rememberMe);
+
+      // Mettre à jour l'état de connexion global
+      if (onLogin) {
+        onLogin();
+      }
 
       // Déterminer la redirection
       const userRole = data.role;

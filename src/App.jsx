@@ -43,8 +43,8 @@ function App() {
       <Routes>
         {!isAuthenticated ? (
           <>
-            <Route path="/" element={<LoginPage />} />
-            <Route path="/login" element={<LoginPage />} />
+            <Route path="/" element={<LoginPage onLogin={handleLogin} />} />
+            <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
             <Route path="*" element={<Navigate to="/login" replace />} />
           </>
         ) : (
