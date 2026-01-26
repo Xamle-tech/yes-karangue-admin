@@ -199,7 +199,7 @@ export default function PointsPage() {
         </div>
         <button
           onClick={() => setViewMode('create')}
-          className="flex items-center gap-2 bg-[#E8B44D] text-white px-5 py-2.5 rounded-lg hover:bg-[#D9A53C] transition font-medium shadow-sm"
+          className="flex items-center gap-2 bg-[#E8B44D] text-white px-5 py-2.5 rounded-full hover:bg-[#D9A53C] transition font-medium shadow-sm"
         >
           <Plus className="h-5 w-5" />
           Ajouter un point

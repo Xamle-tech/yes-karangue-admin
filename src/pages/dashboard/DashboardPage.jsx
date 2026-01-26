@@ -1,5 +1,5 @@
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, Package, Users, DollarSign, AlertCircle, ArrowRight } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { TrendingUp, Package, Users, DollarSign, AlertCircle, ArrowRight, Calendar, Download, ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { fetchDashboardStats } from '../../services/dashboardService';
 
@@ -33,11 +33,61 @@ export default function DashboardPage() {
   const reportedIssues = dashboardData?.reported_issues || 72; // Nombre de problèmes signalés
 
   const stats = [
-    { icon: Package, label: 'Colis envoyés', value: totalShipments, change: '+12%', changeColor: 'text-green-600', color: 'from-blue-50 to-blue-100', iconColor: 'text-blue-600' },
-    { icon: Package, label: 'Colis arrivés', value: deliveredShipments, change: '+8%', changeColor: 'text-green-600', color: 'from-green-50 to-green-100', iconColor: 'text-green-600' },
-    { icon: Users, label: 'Utilisateurs actifs', value: '1248', change: '+8%', changeColor: 'text-green-600', color: 'from-purple-50 to-purple-100', iconColor: 'text-purple-600' },
-    { icon: DollarSign, label: 'Revenus ce mois', value: `${(totalRevenue / 1000000).toFixed(1)}M FCFA`, change: '+15%', changeColor: 'text-green-600', color: 'from-emerald-50 to-emerald-100', iconColor: 'text-emerald-600' },
-    { icon: AlertCircle, label: 'Problèmes signalés', value: reportedIssues, change: '-2%', changeColor: 'text-red-600', color: 'from-red-50 to-red-100', iconColor: 'text-red-600' },
+    {
+      icon: Package,
+      label: 'Colis enrôlés',
+      value: pendingShipments + deliveredShipments + (totalShipments - pendingShipments - deliveredShipments), // Approximation ou total réel
+      change: '+12%',
+      isPositive: true,
+      subLabel: 'vs le dernier mois',
+      iconBg: 'bg-gray-100',
+      iconColor: 'text-gray-900',
+      trendColor: 'text-green-600'
+    },
+    {
+      icon: Package, // Peut-être une icône différente pour "arrivés"
+      label: 'Colis arrivés',
+      value: deliveredShipments,
+      change: '+8%',
+      isPositive: true,
+      subLabel: 'vs le dernier mois',
+      iconBg: 'bg-emerald-50',
+      iconColor: 'text-emerald-600',
+      trendColor: 'text-green-600'
+    },
+    {
+      icon: Users,
+      label: 'Utilisateurs actifs',
+      value: '1248',
+      change: '+8%',
+      isPositive: true,
+      subLabel: 'vs le dernier mois',
+      iconBg: 'bg-blue-50',
+      iconColor: 'text-blue-600',
+      trendColor: 'text-green-600'
+    },
+    {
+      icon: DollarSign,
+      label: 'Revenus ce mois',
+      value: `${(totalRevenue / 1000000).toFixed(1)}M FCFA`,
+      change: '+15%',
+      isPositive: true,
+      subLabel: 'vs le dernier mois',
+      iconBg: 'bg-teal-50',
+      iconColor: 'text-teal-600',
+      trendColor: 'text-green-600'
+    },
+    {
+      icon: AlertCircle,
+      label: 'Problèmes signalés',
+      value: reportedIssues,
+      change: '-2%',
+      isPositive: false,
+      subLabel: 'vs le dernier mois',
+      iconBg: 'bg-red-50',
+      iconColor: 'text-red-600',
+      trendColor: 'text-red-600'
+    },
   ];
 
   const chartData = [
@@ -49,11 +99,18 @@ export default function DashboardPage() {
     { month: 'Juin', colis: 168, utilisateurs: 630 },
   ];
 
+  // Calcul des totaux pour les pourcentages
+  const totalForPie = totalShipments + (5); // Include cancelled mock
+  const enAttenteVal = pendingShipments;
+  const annuleVal = 5;
+  const livreVal = deliveredShipments;
+  const enTransitVal = totalShipments - pendingShipments - deliveredShipments;
+
   const statusData = [
-    { name: 'Livré', value: deliveredShipments, color: '#10B981' },
-    { name: 'En transit', value: totalShipments - pendingShipments - deliveredShipments, color: '#3B82F6' }, // Estimation
-    { name: 'En attente', value: pendingShipments, color: '#F59E0B' },
-    { name: 'Annulé', value: 0, color: '#EF4444' },
+    { name: 'En attente', value: enAttenteVal, color: '#D1D5DB' }, // Gray (Top-Right start)
+    { name: 'Annulé', value: annuleVal, color: '#EF4444' }, // Red
+    { name: 'Livré', value: livreVal, color: '#10B981' }, // Green
+    { name: 'En transit', value: enTransitVal, color: '#EAB308' }, // Yellow/Gold
   ];
 
   if (loading) {
@@ -114,11 +171,26 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord</h1>
-        <p className="text-gray-600 mt-1">
-          Bienvenue, Admin! Voici un aperçu de votre plateforme.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Tableau de Bord</h1>
+          <p className="text-gray-600 mt-1">
+            Bienvenue, Admin! Voici un aperçu de votre plateforme.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition shadow-sm">
+            <Calendar className="h-4 w-4 text-gray-500" />
+            Ce-mois
+            <ChevronDown className="h-4 w-4 text-gray-400" />
+          </button>
+
+          <button className="flex items-center gap-2 px-4 py-2 bg-[#D4A017] hover:bg-[#B38600] text-white rounded-lg text-sm font-medium transition shadow-sm">
+            <Download className="h-4 w-4" />
+            Exporter
+          </button>
+        </div>
       </div>
 
       {/* Stats Grid - Updated to 5 columns */}
@@ -128,18 +200,24 @@ export default function DashboardPage() {
           return (
             <div
               key={idx}
-              className={`bg-gradient-to-br ${stat.color} rounded-lg border border-gray-200 p-6`}
+              className="bg-white rounded-xl border border-gray-100 p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:shadow-md transition-shadow"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className={`p-3 rounded-lg bg-white ${stat.iconColor}`}>
-                  <Icon className="h-6 w-6" />
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <p className="text-gray-500 text-sm font-medium mb-1">{stat.label}</p>
+                  <h3 className="text-2xl font-bold text-gray-900">{stat.value}</h3>
                 </div>
-                <span className={`text-sm font-semibold ${stat.changeColor}`}>
-                  {stat.change}
-                </span>
+                <div className={`p-2.5 rounded-lg ${stat.iconBg}`}>
+                  <Icon className={`h-5 w-5 ${stat.iconColor}`} />
+                </div>
               </div>
-              <p className="text-gray-700 text-sm font-medium">{stat.label}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">{stat.value}</p>
+
+              <div className="flex items-center gap-2 text-xs">
+                <span className={`font-semibold flex items-center gap-1 ${stat.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                  {stat.isPositive ? '↗' : '↘'} {stat.change}
+                </span>
+                <span className="text-gray-400">{stat.subLabel}</span>
+              </div>
             </div>
           );
         })}
@@ -147,101 +225,152 @@ export default function DashboardPage() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Line Chart */}
-        <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Activité mensuelle</h2>
+        {/* Area Chart */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900 mb-6">Activité mensuelle</h2>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="month" stroke="#6b7280" />
-              <YAxis stroke="#6b7280" />
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="colorColis" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#305669" stopOpacity={0.1} />
+                  <stop offset="95%" stopColor="#305669" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#EAB308" stopOpacity={0.1} />
+                  <stop offset="95%" stopColor="#EAB308" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+              <XAxis
+                dataKey="month"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                dy={10}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#9CA3AF', fontSize: 12 }}
+              />
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
+                  border: 'none',
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  padding: '12px'
                 }}
               />
-              <Legend />
-              <Line
+              <Legend iconType="circle" />
+              <Area
                 type="monotone"
                 dataKey="colis"
-                stroke="#3B82F6"
+                stroke="#305669"
                 strokeWidth={2}
+                fillOpacity={1}
+                fill="url(#colorColis)"
                 name="Colis"
               />
-              <Line
+              <Area
                 type="monotone"
                 dataKey="utilisateurs"
-                stroke="#10B981"
+                stroke="#EAB308"
                 strokeWidth={2}
+                fillOpacity={1}
+                fill="url(#colorUsers)"
                 name="Utilisateurs"
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Pie Chart */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Distribution des statuts</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={statusData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) =>
-                  `${name} ${(percent * 100).toFixed(0)}%`
-                }
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {statusData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+        {/* Donut Chart */}
+        <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900 mb-6">Distribution des statuts</h2>
+          <div className="flex items-center justify-center h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={statusData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={85}
+                  outerRadius={115}
+                  paddingAngle={0}
+                  dataKey="value"
+                  startAngle={90}
+                  endAngle={-270}
+                >
+                  {statusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
+                <Legend
+                  layout="vertical"
+                  verticalAlign="middle"
+                  align="right"
+                  iconType="circle"
+                  formatter={(value, entry) => {
+                    const { payload } = entry;
+                    const percent = ((payload.value / totalForPie) * 100).toFixed(0);
+                    return <span className="text-sm text-gray-600 font-medium ml-2">{value} • {percent}%</span>;
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
       {/* Recent Shipments & Top Transporters */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Shipments */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-gray-900">Colis récents</h2>
             <a href="/shipments" className="text-[#305669] text-sm font-medium hover:underline flex items-center gap-1">
               Voir tout <ArrowRight className="h-4 w-4" />
             </a>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {recentShipments.map((shipment) => (
               <div
                 key={shipment.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-[#305669] transition"
+                className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-100 hover:shadow-md transition-all duration-200 group"
               >
-                <div className="flex-1">
-                  <p className="font-semibold text-gray-900">{shipment.id}</p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {shipment.from} → {shipment.to}
-                  </p>
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-600 group-hover:bg-orange-100 transition-colors">
+                    <Package size={20} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 text-sm">{shipment.id}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {shipment.from} → {shipment.to}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
+
+                <div className="flex flex-col items-end gap-1">
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase tracking-wide font-bold ${getStatusColor(
                       shipment.status
                     )}`}
                   >
                     {getStatusLabel(shipment.status)}
                   </span>
                   {shipment.stamp === 'pending' && (
-                    <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">
-                      Timbre
+                    <span className="text-[10px] text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded font-medium">
+                      Timbre requis
                     </span>
                   )}
                 </div>
@@ -251,33 +380,33 @@ export default function DashboardPage() {
         </div>
 
         {/* Top Transporters */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-gray-900">Meilleurs transporteurs</h2>
             <a href="/transporters" className="text-[#305669] text-sm font-medium hover:underline flex items-center gap-1">
               Voir tout <ArrowRight className="h-4 w-4" />
             </a>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {topTransporters.map((transporter, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-[#305669] transition"
+                className="flex items-center gap-4"
               >
+                <div className="w-32 text-sm font-medium text-gray-700 truncate">{transporter.name}</div>
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-900">{transporter.name}</p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {transporter.deliveries} livraisons
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-1">
-                    <span className="text-lg font-bold text-gray-900">
-                      {transporter.rating}
-                    </span>
-                    <span className="text-yellow-400">⭐</span>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#EAB308] rounded-full"
+                      style={{ width: `${(transporter.deliveries / 300) * 100}%` }}
+                    />
                   </div>
+                  <p className="text-xs text-gray-400 mt-1">{transporter.deliveries} livraisons</p>
+                </div>
+                <div className="flex items-center gap-1 min-w-[3rem] justify-end">
+                  <span className="text-sm font-bold text-gray-900">{transporter.rating}</span>
+                  <span className="text-yellow-400 text-xs">⭐</span>
                 </div>
               </div>
             ))}
