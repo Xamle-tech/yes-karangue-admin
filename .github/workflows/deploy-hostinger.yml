@@ -1,0 +1,45 @@
+name: Deploy Admin to Hostinger
+
+on:
+  push:
+    branches: [ v2.1 ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Hostinger
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🚀 Deploy via SSH
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.HOSTINGER_SSH_HOST }}
+        username: ${{ secrets.HOSTINGER_SSH_USERNAME }}
+        password: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
+        port: ${{ secrets.HOSTINGER_SSH_PORT }}
+        script: |
+          echo "📦 Déploiement Admin démarré..."
+          
+          # Vérifier Node.js et npm
+          echo "🔍 Vérification de Node.js et npm..."
+          node --version || echo "⚠️ Node.js non trouvé"
+          npm --version || echo "⚠️ npm non trouvé"
+          
+          # Aller dans le dossier du projet admin
+          cd /home/u853874975/public_html/backoffice.yeskarangue.com/yes-karangue-admin
+          
+          # Pull les dernières modifications
+          echo "📥 Pull des modifications..."
+          git pull origin v2.1
+          
+          # Installer les dépendances
+          echo "📦 Installation des dépendances..."
+          npm install
+          
+          # Build de production
+          echo "🔨 Build de production..."
+          npm run build
+          
+          echo "✅ Déploiement terminé avec succès!"
+          echo "🌐 Votre admin est disponible sur: https://backoffice.yeskarangue.com"

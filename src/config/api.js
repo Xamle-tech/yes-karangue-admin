@@ -6,7 +6,7 @@
 // URL de base de l'API - Utilise le proxy en développement
 export const API_BASE_URL = import.meta.env.DEV
     ? ''
-    : (import.meta.env.VITE_API_BASE_URL || 'https://yes-karangue-api-production.up.railway.app');
+    : (import.meta.env.VITE_API_BASE_URL || 'https://xamleprodbackend.yeskarangue.com');
 
 // Endpoints d'authentification
 export const AUTH_ENDPOINTS = {
