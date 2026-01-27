@@ -35,7 +35,10 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 ### Étape 3 : Activer NVM
 
 ```bash
-# Recharger le profil
+# Recharger le profil (Hostinger utilise .profile)
+source ~/.profile
+
+# OU si le fichier est .bashrc
 source ~/.bashrc
 
 # OU si vous utilisez zsh
@@ -134,11 +137,11 @@ nvm uninstall 18
 
 **Solution :**
 ```bash
-# Recharger le profil
-source ~/.bashrc
+# Recharger le profil (sur Hostinger c'est .profile)
+source ~/.profile
 
-# Si ça ne fonctionne toujours pas, ajouter manuellement à ~/.bashrc
-nano ~/.bashrc
+# Si ça ne fonctionne toujours pas, ajouter manuellement à ~/.profile
+nano ~/.profile
 ```
 
 Ajouter ces lignes à la fin du fichier :
@@ -150,7 +153,7 @@ export NVM_DIR="$HOME/.nvm"
 
 Puis recharger :
 ```bash
-source ~/.bashrc
+source ~/.profile
 ```
 
 ### Problème : `npm: command not found` après installation
@@ -169,11 +172,11 @@ npm --version
 
 ### Problème : NVM se réinitialise après déconnexion
 
-**Solution :** Ajouter NVM au profil bash :
+**Solution :** Ajouter NVM au profil (sur Hostinger, c'est .profile) :
 ```bash
-echo 'export NVM_DIR="$HOME/.nvm"' >> ~/.bashrc
-echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> ~/.bashrc
-source ~/.bashrc
+echo 'export NVM_DIR="$HOME/.nvm"' >> ~/.profile
+echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> ~/.profile
+source ~/.profile
 ```
 
 ---

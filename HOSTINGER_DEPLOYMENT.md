@@ -63,8 +63,8 @@ npm --version
 # 1. Installer NVM
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 
-# 2. Activer NVM
-source ~/.bashrc
+# 2. Activer NVM (Hostinger utilise .profile)
+source ~/.profile
 
 # 3. Installer Node.js 20
 nvm install 20

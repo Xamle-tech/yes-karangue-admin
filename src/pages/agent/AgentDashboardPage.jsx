@@ -102,22 +102,15 @@ export default function AgentDashboardPage() {
 
       setCreatedShipment(newShipment);
 
-      // 2. Générer et ouvrir la feuille de route si l'ID est disponible
-      if (newShipment && newShipment.id) {
+      // 2. Générer et ouvrir la feuille de route si le tracking number est disponible
+      if (newShipment && newShipment.tracking_number) {
         try {
-          console.log('📄 Génération de la feuille de route pour le colis:', newShipment.id);
-          const pdfBlob = await downloadWaybillPDF(newShipment.id);
-
-          // Créer une URL pour le Blob et l'ouvrir dans un nouvel onglet
-          const pdfUrl = window.URL.createObjectURL(pdfBlob);
-          window.open(pdfUrl, '_blank');
-
-          // Nettoyer l'URL après un délai pour libérer la mémoire (optionnel mais recommandé)
-          setTimeout(() => window.URL.revokeObjectURL(pdfUrl), 10000);
-
+          console.log('📄 Génération de la feuille de route pour le colis:', newShipment.tracking_number);
+          // La fonction downloadWaybillPDF ouvre automatiquement la page dans un nouvel onglet
+          await downloadWaybillPDF(newShipment.tracking_number);
         } catch (pdfError) {
-          console.error('⚠️ Erreur lors de la génération du PDF:', pdfError);
-          // On ne bloque pas le flux de succès si le PDF échoue, mais on peut notifier l'utilisateur
+          console.error('⚠️ Erreur lors de la génération de la feuille de route:', pdfError);
+          // On ne bloque pas le flux de succès si l'ouverture échoue
           alert('Le colis a été créé mais la feuille de route n\'a pas pu être générée automatiquement.');
         }
       }
@@ -260,10 +253,8 @@ export default function AgentDashboardPage() {
             try {
               // Importer la fonction si elle n'est pas déjà importée en haut ou dynamiquement
               const { downloadWaybillPDFByTrackingNumber } = await import('../../services/agentShipmentsService');
-              const pdfBlob = await downloadWaybillPDFByTrackingNumber(createdShipment.tracking_number);
-              const pdfUrl = window.URL.createObjectURL(pdfBlob);
-              window.open(pdfUrl, '_blank');
-              setTimeout(() => window.URL.revokeObjectURL(pdfUrl), 10000);
+              // La fonction ouvre automatiquement la page dans un nouvel onglet
+              await downloadWaybillPDFByTrackingNumber(createdShipment.tracking_number);
             } catch (error) {
               console.error('Erreur impression:', error);
               alert('Impossible de récupérer la lettre de route.');

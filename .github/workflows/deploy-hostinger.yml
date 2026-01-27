@@ -21,9 +21,10 @@ jobs:
         script: |
           echo "📦 Déploiement Admin démarré..."
           
-          # Charger NVM
+          # Charger NVM (compatible .profile et .bashrc)
           export NVM_DIR="$HOME/.nvm"
           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          [ -s "$HOME/.profile" ] && source "$HOME/.profile"
           
           # Utiliser Node.js 20
           nvm use 20 || nvm use default

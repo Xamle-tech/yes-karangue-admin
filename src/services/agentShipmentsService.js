@@ -300,34 +300,13 @@ export const resendPickupCode = async (shipmentId) => {
 
 /**
  * Génère et télécharge la feuille de route (waybill) en format PDF
- * @param {number|string} shipmentId - L'ID du colis
+ * @deprecated Utiliser downloadWaybillPDFByTrackingNumber à la place
+ * @param {string} trackingNumber - Le numéro de suivi du colis
  * @returns {Promise<Blob>} Fichier PDF
  */
-export const downloadWaybillPDF = async (shipmentId) => {
-    try {
-        const url = buildUrl(`/api/v1/agent/shipments/${shipmentId}/waybill.pdf`);
-
-        const response = await authorizedFetch(url, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-            },
-        });
-
-        if (!response.ok) {
-            if (response.status === 404) {
-                throw new Error('Colis non trouvé');
-            }
-            throw new Error(`Erreur HTTP: ${response.status}`);
-        }
-
-        // Retourner le blob pour téléchargement
-        const blob = await response.blob();
-        return blob;
-    } catch (error) {
-        console.error('Erreur lors du téléchargement du PDF:', error);
-        throw error;
-    }
+export const downloadWaybillPDF = async (trackingNumber) => {
+    // Rediriger vers la fonction qui utilise le tracking number
+    return downloadWaybillPDFByTrackingNumber(trackingNumber);
 };
 
 export const receiveAgentShipmentByTrackingNumber = async (trackingNumber) => {
@@ -353,10 +332,15 @@ export const receiveAgentShipmentByTrackingNumber = async (trackingNumber) => {
         throw error;
     }
 };
+/**
+ * Ouvre la feuille de route dans un nouvel onglet
+ * Note: L'API retourne du HTML imprimable au lieu de PDF en raison des limitations serveur
+ * @param {string} trackingNumber - Le numéro de suivi du colis
+ * @returns {Promise<Blob>} Blob vide pour compatibilité
+ */
 export const downloadWaybillPDFByTrackingNumber = async (trackingNumber) => {
     try {
         const url = buildUrl(`/api/v1/agent/shipments/${trackingNumber}/waybill.pdf`);
-
         const response = await authorizedFetch(url, {
             method: 'GET',
             headers: {
@@ -371,11 +355,20 @@ export const downloadWaybillPDFByTrackingNumber = async (trackingNumber) => {
             throw new Error(`Erreur HTTP: ${response.status}`);
         }
 
-        // Retourner le blob pour téléchargement
-        const blob = await response.blob();
+        // Lire la réponse comme texte (HTML)
+        const htmlContent = await response.text();
+        
+        // Créer un blob HTML et l'ouvrir dans un nouvel onglet
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const blobUrl = window.URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank');
+        
+        // Nettoyer l'URL après un délai
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+        
         return blob;
     } catch (error) {
-        console.error('Erreur lors du téléchargement du PDF:', error);
+        console.error('Erreur lors de l\'ouverture de la feuille de route:', error);
         throw error;
     }
 };
