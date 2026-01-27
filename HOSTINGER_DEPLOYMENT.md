@@ -44,7 +44,7 @@ ssh u853874975@your-server.hostinger.com -p 65002
 
 ---
 
-## 📦 Étape 2.5 : Installer Node.js et npm (si nécessaire)
+## 📦 Étape 2.5 : Installer Node.js et npm (OBLIGATOIRE)
 
 ### Vérifier si Node.js est installé
 
@@ -53,40 +53,30 @@ node --version
 npm --version
 ```
 
-### Si Node.js n'est pas installé
+### Si Node.js n'est pas installé (erreur "command not found")
 
-Hostinger utilise généralement des versions de Node.js via des gestionnaires. Voici comment installer Node.js :
+**📖 Consultez le guide complet : [INSTALL_NODEJS.md](./INSTALL_NODEJS.md)**
 
-#### Option 1 : Via le panneau Hostinger (Recommandé)
-
-1. Allez dans **hPanel** > **Avancé** > **Node.js**
-2. Sélectionnez la version Node.js (recommandé : v18 ou v20)
-3. Activez Node.js pour votre domaine
-
-#### Option 2 : Via NVM (Node Version Manager)
+**Installation rapide via NVM :**
 
 ```bash
-# Installer NVM
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+# 1. Installer NVM
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 
-# Recharger le shell
+# 2. Activer NVM
 source ~/.bashrc
 
-# Installer Node.js (version 20 LTS)
+# 3. Installer Node.js 20
 nvm install 20
 nvm use 20
+nvm alias default 20
 
-# Vérifier l'installation
+# 4. Vérifier
 node --version
 npm --version
 ```
 
-### Vérifier l'installation
-
-```bash
-node --version  # Devrait afficher v18.x.x ou v20.x.x
-npm --version   # Devrait afficher 9.x.x ou 10.x.x
-```
+**✅ Node.js est maintenant installé et prêt à l'emploi !**
 
 ---
 

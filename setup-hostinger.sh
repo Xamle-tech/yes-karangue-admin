@@ -14,6 +14,10 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Charger NVM si installé
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
 # Vérifier Node.js
 echo ""
 echo "🔍 Vérification de Node.js..."
