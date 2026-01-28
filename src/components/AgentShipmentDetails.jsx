@@ -15,6 +15,7 @@ import {
 import { useState } from 'react';
 import boxIcon from '../icons/box.png';
 import { printWaybill, downloadWaybill } from '../services/agentShipmentsService';
+import { buildFileUrl } from '../config/api';
 
 export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
     // Use passed shipment or fallbacks
@@ -287,7 +288,7 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
                         <div className="bg-gray-200 rounded-xl h-48 w-full mb-4 overflow-hidden relative">
                             {data.package_photo_url ? (
                                 <img 
-                                    src={data.package_photo_url} 
+                                    src={buildFileUrl(data.package_photo_url)} 
                                     alt="Photo du colis" 
                                     className="w-full h-full object-cover" 
                                     onError={(e) => {

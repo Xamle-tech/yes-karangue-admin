@@ -60,3 +60,20 @@ export const getDefaultHeaders = () => {
 export const buildUrl = (endpoint) => {
     return `${API_BASE_URL}${endpoint}`;
 };
+
+/**
+ * Fonction utilitaire pour construire une URL d'image/fichier
+ * Gère les URLs relatives retournées par l'API (ex: /storage/parcels/photos/xxx.jpg)
+ */
+export const buildFileUrl = (relativePath) => {
+    if (!relativePath) return null;
+    
+    // Si c'est déjà une URL complète (http:// ou https://), la retourner telle quelle
+    if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
+        return relativePath;
+    }
+    
+    // Sinon, construire l'URL complète avec le domaine de l'API
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://xamleprodbackend.yeskarangue.com';
+    return `${baseUrl}${relativePath}`;
+};
