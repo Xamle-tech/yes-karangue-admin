@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import boxIcon from '../icons/box.png';
-import { printWaybill, downloadWaybill } from '../services/agentShipmentsService';
+import { printWaybill, downloadWaybill, updateAgentShipmentStatus } from '../services/agentShipmentsService';
 import { buildFileUrl } from '../config/api';
 
 export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
@@ -30,7 +30,9 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
     const [selectedStatus, setSelectedStatus] = useState(data.status);
     const [isPrinting, setIsPrinting] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [error, setError] = useState(null);
+    const [successMessage, setSuccessMessage] = useState(null);
 
     const handlePrint = async () => {
         if (!data.tracking_number) {
@@ -65,6 +67,50 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
             console.error('Erreur téléchargement:', err);
         } finally {
             setIsDownloading(false);
+        }
+    };
+
+    const handleStatusUpdate = async () => {
+        // Vérifier que la prise en charge est déjà effectuée
+        const isPriseEnChargeCompleted = ['PRISE_EN_CHARGE', 'EN_COURS_LIVRAISON', 'RECUPERE', 'LIVRE'].includes(data.status);
+        
+        if (!isPriseEnChargeCompleted) {
+            setError('Le colis doit d\'abord être pris en charge avant de passer en cours de livraison');
+            return;
+        }
+
+        // Vérifier qu'on n'est pas déjà en cours de livraison ou au-delà
+        if (['EN_COURS_LIVRAISON', 'RECUPERE', 'LIVRE'].includes(data.status)) {
+            setError('Le statut "En cours de livraison" est déjà atteint ou dépassé');
+            return;
+        }
+
+        if (!data.tracking_number) {
+            setError('Numéro de suivi manquant');
+            return;
+        }
+
+        setIsUpdatingStatus(true);
+        setError(null);
+        setSuccessMessage(null);
+
+        try {
+            await updateAgentShipmentStatus(data.tracking_number, {
+                new_status: 'EN_COURS_LIVRAISON',
+                event_time: new Date().toISOString()
+            });
+
+            setSuccessMessage('Le statut a été mis à jour avec succès !');
+            
+            // Recharger la page après 1.5 secondes pour afficher les nouveaux changements
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } catch (err) {
+            setError(err.message || 'Erreur lors de la mise à jour du statut');
+            console.error('Erreur mise à jour statut:', err);
+        } finally {
+            setIsUpdatingStatus(false);
         }
     };
 
@@ -361,45 +407,88 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
                         <h2 className="text-xl font-bold text-gray-900 mb-6">Mettre à jour le statut</h2>
 
                         <div className="space-y-4 flex-1">
-                            {steps.map((step) => (
-                                <div
-                                    key={step.id}
-                                    className={`flex items-start gap-4 p-4 rounded-xl border transition-all ${step.completed
-                                        ? 'bg-[#FEF9EA] border-[#E8B44D]'
-                                        : 'bg-white border-gray-100'
+                            {steps.map((step) => {
+                                const isManualStep = step.key === 'EN_COURS_LIVRAISON';
+                                const isPriseEnChargeCompleted = ['PRISE_EN_CHARGE', 'EN_COURS_LIVRAISON', 'RECUPERE', 'LIVRE'].includes(data.status);
+                                const canBeUpdated = isManualStep && isPriseEnChargeCompleted && !step.completed;
+
+                                return (
+                                    <div
+                                        key={step.id}
+                                        className={`flex items-start gap-4 p-4 rounded-xl border transition-all ${
+                                            step.completed
+                                                ? 'bg-[#FEF9EA] border-[#E8B44D]'
+                                                : canBeUpdated
+                                                ? 'bg-blue-50 border-blue-200'
+                                                : 'bg-white border-gray-100'
                                         }`}
-                                >
-                                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0 ${step.completed ? 'bg-[#E8B44D] text-white' : 'bg-gray-100 text-gray-400'
+                                    >
+                                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0 ${
+                                            step.completed 
+                                                ? 'bg-[#E8B44D] text-white' 
+                                                : canBeUpdated
+                                                ? 'bg-blue-500 text-white'
+                                                : 'bg-gray-100 text-gray-400'
                                         }`}>
-                                        {step.id}
+                                            {step.id}
+                                        </div>
+                                        <div className="flex-1">
+                                            <h4 className={`font-bold ${step.completed ? 'text-gray-900' : canBeUpdated ? 'text-blue-700' : 'text-gray-500'}`}>
+                                                {step.label}
+                                                {step.disabled && <span className="text-xs font-normal text-gray-400 ml-2">(Automatique)</span>}
+                                                {isManualStep && !step.completed && <span className="text-xs font-normal text-blue-600 ml-2">(Modifiable)</span>}
+                                            </h4>
+                                            <p className="text-xs text-gray-400 mt-1">{step.desc}</p>
+                                        </div>
+                                        <div className="mt-1">
+                                            {step.completed ? (
+                                                <CheckCircle className="h-6 w-6 text-[#E8B44D]" fill="currentColor" />
+                                            ) : canBeUpdated ? (
+                                                <AlertCircle className="h-6 w-6 text-blue-500" />
+                                            ) : (
+                                                <Circle className="h-6 w-6 text-gray-200" />
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="flex-1">
-                                        <h4 className={`font-bold ${step.completed ? 'text-gray-900' : 'text-gray-500'}`}>
-                                            {step.label}
-                                        </h4>
-                                        <p className="text-xs text-gray-400 mt-1">{step.desc}</p>
-                                    </div>
-                                    <div className="mt-1">
-                                        {step.completed ? (
-                                            <CheckCircle className="h-6 w-6 text-[#E8B44D]" fill="currentColor" />
-                                        ) : (
-                                            <Circle className="h-6 w-6 text-gray-200" />
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
                         <div className="mt-8">
+                            {successMessage && (
+                                <div className="bg-green-50 border border-green-200 p-4 rounded-xl mb-4">
+                                    <p className="text-green-700 text-sm">{successMessage}</p>
+                                </div>
+                            )}
+
                             <div className="bg-[#FFF4F2] p-4 rounded-xl mb-6">
                                 <p className="text-[#D32F2F] text-xs leading-relaxed">
-                                    <span className="font-bold">Note:</span> Les étapes 4 (Au point de retrait) et 5 (Remis au destinataire) seront mises à jour automatiquement par le système.
+                                    <span className="font-bold">Note:</span> Vous ne pouvez passer le colis en "En cours de livraison" que si l'étape "Prise en charge" est complétée. Les étapes "Arrivé" et "Livré" sont automatiquement gérées par le système.
                                 </p>
                             </div>
 
-                            <button className="w-full py-4 bg-[#E8B44D] text-white font-bold rounded-full hover:bg-[#D9A53C] transition shadow-sm">
-                                Confirmer la mise à jour
-                            </button>
+                            {(() => {
+                                const isPriseEnChargeCompleted = ['PRISE_EN_CHARGE', 'EN_COURS_LIVRAISON', 'RECUPERE', 'LIVRE'].includes(data.status);
+                                const isAlreadyEnCours = ['EN_COURS_LIVRAISON', 'RECUPERE', 'LIVRE'].includes(data.status);
+                                const canUpdate = isPriseEnChargeCompleted && !isAlreadyEnCours;
+
+                                return (
+                                    <button 
+                                        onClick={handleStatusUpdate}
+                                        disabled={!canUpdate || isUpdatingStatus}
+                                        className={`w-full py-4 font-bold rounded-full transition shadow-sm ${
+                                            canUpdate && !isUpdatingStatus
+                                                ? 'bg-[#E8B44D] text-white hover:bg-[#D9A53C] cursor-pointer'
+                                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        }`}
+                                    >
+                                        {isUpdatingStatus ? 'Mise à jour en cours...' : 
+                                         isAlreadyEnCours ? 'Déjà en cours de livraison' :
+                                         !isPriseEnChargeCompleted ? 'En attente de prise en charge' :
+                                         'Passer en cours de livraison'}
+                                    </button>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
