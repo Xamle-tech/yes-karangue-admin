@@ -380,3 +380,102 @@ export const downloadWaybillPDFByTrackingNumber = async (trackingNumber) => {
         throw error;
     }
 };
+
+/**
+ * Imprime la feuille de route
+ * Ouvre la page dans une nouvelle fenêtre et déclenche l'impression
+ * @param {string} trackingNumber - Le numéro de suivi du colis
+ */
+export const printWaybill = async (trackingNumber) => {
+    try {
+        const url = buildUrl(`/api/v1/agent/shipments/${trackingNumber}/waybill.pdf`);
+        const token = localStorage.getItem('authToken');
+        
+        const response = await authorizedFetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('Colis non trouvé');
+            }
+            if (response.status === 401) {
+                throw new Error('Non authentifié - veuillez vous reconnecter');
+            }
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        const htmlContent = await response.text();
+        
+        // Ouvrir une nouvelle fenêtre et écrire le contenu HTML
+        const newWindow = window.open('', '_blank');
+        if (newWindow) {
+            newWindow.document.write(htmlContent);
+            newWindow.document.close();
+            
+            // Attendre que le contenu soit chargé puis déclencher l'impression
+            newWindow.onload = () => {
+                setTimeout(() => {
+                    newWindow.print();
+                }, 500);
+            };
+        } else {
+            throw new Error('Le navigateur a bloqué l\'ouverture de la fenêtre. Veuillez autoriser les pop-ups.');
+        }
+    } catch (error) {
+        console.error('Erreur lors de l\'impression de la feuille de route:', error);
+        throw error;
+    }
+};
+
+/**
+ * Télécharge la feuille de route
+ * Télécharge le fichier HTML comme fichier .html
+ * @param {string} trackingNumber - Le numéro de suivi du colis
+ */
+export const downloadWaybill = async (trackingNumber) => {
+    try {
+        const url = buildUrl(`/api/v1/agent/shipments/${trackingNumber}/waybill.pdf`);
+        const token = localStorage.getItem('authToken');
+        
+        const response = await authorizedFetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('Colis non trouvé');
+            }
+            if (response.status === 401) {
+                throw new Error('Non authentifié - veuillez vous reconnecter');
+            }
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        const htmlContent = await response.text();
+        
+        // Créer un blob et télécharger
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const blobUrl = window.URL.createObjectURL(blob);
+        
+        // Créer un lien de téléchargement
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = `feuille-route-${trackingNumber}.html`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Nettoyer l'URL
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100);
+    } catch (error) {
+        console.error('Erreur lors du téléchargement de la feuille de route:', error);
+        throw error;
+    }
+};

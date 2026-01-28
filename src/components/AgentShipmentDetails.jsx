@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import boxIcon from '../icons/box.png';
+import { printWaybill, downloadWaybill } from '../services/agentShipmentsService';
 
 export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
     // Use passed shipment or fallbacks
@@ -27,6 +28,45 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
     };
 
     const [selectedStatus, setSelectedStatus] = useState(data.status);
+    const [isPrinting, setIsPrinting] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const handlePrint = async () => {
+        if (!data.tracking_number) {
+            setError('Numéro de suivi manquant');
+            return;
+        }
+
+        setIsPrinting(true);
+        setError(null);
+        try {
+            await printWaybill(data.tracking_number);
+        } catch (err) {
+            setError(err.message || 'Erreur lors de l\'impression');
+            console.error('Erreur impression:', err);
+        } finally {
+            setIsPrinting(false);
+        }
+    };
+
+    const handleDownload = async () => {
+        if (!data.tracking_number) {
+            setError('Numéro de suivi manquant');
+            return;
+        }
+
+        setIsDownloading(true);
+        setError(null);
+        try {
+            await downloadWaybill(data.tracking_number);
+        } catch (err) {
+            setError(err.message || 'Erreur lors du téléchargement');
+            console.error('Erreur téléchargement:', err);
+        } finally {
+            setIsDownloading(false);
+        }
+    };
 
     // Status mapping for timeline
     const steps = [
@@ -100,15 +140,30 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
                         Gestion des Colis <span className="text-gray-300">›</span> Colis N° {data.tracking_number}
                     </p>
                 </div>
-                <div className="ml-auto flex gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-gray-700 hover:bg-gray-50 font-medium text-sm">
-                        <Printer className="h-4 w-4" />
-                        Imprimer
-                    </button>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-gray-700 hover:bg-gray-50 font-medium text-sm">
-                        <Download className="h-4 w-4" />
-                        Télécharger
-                    </button>
+                <div className="ml-auto flex flex-col items-end gap-2">
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={handlePrint}
+                            disabled={isPrinting || isDownloading}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-gray-700 hover:bg-gray-50 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                            <Printer className="h-4 w-4" />
+                            {isPrinting ? 'Impression...' : 'Imprimer'}
+                        </button>
+                        <button 
+                            onClick={handleDownload}
+                            disabled={isPrinting || isDownloading}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-gray-700 hover:bg-gray-50 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                            <Download className="h-4 w-4" />
+                            {isDownloading ? 'Téléchargement...' : 'Télécharger'}
+                        </button>
+                    </div>
+                    {error && (
+                        <div className="px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                            {error}
+                        </div>
+                    )}
                 </div>
             </div>
 
