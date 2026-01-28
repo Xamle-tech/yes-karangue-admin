@@ -309,11 +309,11 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-500 text-sm">Téléphone</span>
-                            <span className="text-gray-900 font-medium text-right">{data.sender_phone_number || 'N/A'}</span>
+                            <span className="text-gray-900 font-medium text-right">{data.sender_phone || 'N/A'}</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-500 text-sm">Numéro pièce</span>
-                            <span className="text-gray-900 font-medium text-right">1 1932 2002 00516</span>
+                            <span className="text-gray-900 font-medium text-right">{data.sender_id_number || 'N/A'}</span>
                         </div>
                     </div>
 
@@ -330,7 +330,7 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-500 text-sm">Téléphone</span>
-                            <span className="text-gray-900 font-medium text-right">{data.recipient_phone_number || 'N/A'}</span>
+                            <span className="text-gray-900 font-medium text-right">{data.recipient_phone || 'N/A'}</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-500 text-sm">Adresse</span>
