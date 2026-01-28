@@ -333,16 +333,15 @@ export const receiveAgentShipmentByTrackingNumber = async (trackingNumber) => {
     }
 };
 /**
- * Ouvre la feuille de route dans un nouvel onglet
- * Note: L'API retourne du HTML imprimable au lieu de PDF en raison des limitations serveur
+ * Ouvre la feuille de route (PDF) dans un nouvel onglet
  * @param {string} trackingNumber - Le numéro de suivi du colis
- * @returns {Promise<Blob>} Blob vide pour compatibilité
+ * @returns {Promise<Blob>} Le blob PDF
  */
 export const downloadWaybillPDFByTrackingNumber = async (trackingNumber) => {
     try {
         const url = buildUrl(`/api/v1/agent/shipments/${trackingNumber}/waybill.pdf`);
         
-        // Récupérer le HTML avec authentification
+        // Récupérer le PDF avec authentification
         const response = await authorizedFetch(url, {
             method: 'GET',
         });
@@ -357,20 +356,21 @@ export const downloadWaybillPDFByTrackingNumber = async (trackingNumber) => {
             throw new Error(`Erreur HTTP: ${response.status}`);
         }
 
-        // Lire la réponse comme texte (HTML)
-        const htmlContent = await response.text();
+        // Récupérer le PDF en tant que blob
+        const blob = await response.blob();
         
-        // Ouvrir une nouvelle fenêtre et écrire le contenu HTML
-        const newWindow = window.open('', '_blank');
-        if (newWindow) {
-            newWindow.document.write(htmlContent);
-            newWindow.document.close();
-        } else {
+        // Créer une URL pour le blob et ouvrir dans un nouvel onglet
+        const blobUrl = window.URL.createObjectURL(blob);
+        const newWindow = window.open(blobUrl, '_blank');
+        
+        if (!newWindow) {
             throw new Error('Le navigateur a bloqué l\'ouverture de la fenêtre. Veuillez autoriser les pop-ups.');
         }
         
-        // Retourner un blob vide pour compatibilité
-        return new Blob([''], { type: 'text/html' });
+        // Nettoyer l'URL après un délai
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 5000);
+        
+        return blob;
     } catch (error) {
         console.error('Erreur lors de l\'ouverture de la feuille de route:', error);
         throw error;
@@ -378,8 +378,8 @@ export const downloadWaybillPDFByTrackingNumber = async (trackingNumber) => {
 };
 
 /**
- * Imprime la feuille de route
- * Ouvre la page dans une nouvelle fenêtre et déclenche l'impression
+ * Imprime la feuille de route (PDF)
+ * Ouvre le PDF dans une nouvelle fenêtre et déclenche l'impression
  * @param {string} trackingNumber - Le numéro de suivi du colis
  */
 export const printWaybill = async (trackingNumber) => {
@@ -400,23 +400,26 @@ export const printWaybill = async (trackingNumber) => {
             throw new Error(`Erreur HTTP: ${response.status}`);
         }
 
-        const htmlContent = await response.text();
+        // Récupérer le PDF en tant que blob
+        const blob = await response.blob();
         
-        // Ouvrir une nouvelle fenêtre et écrire le contenu HTML
-        const newWindow = window.open('', '_blank');
-        if (newWindow) {
-            newWindow.document.write(htmlContent);
-            newWindow.document.close();
-            
-            // Attendre que le contenu soit chargé puis déclencher l'impression
-            newWindow.onload = () => {
-                setTimeout(() => {
-                    newWindow.print();
-                }, 500);
-            };
-        } else {
+        // Créer une URL pour le blob
+        const blobUrl = window.URL.createObjectURL(blob);
+        
+        // Ouvrir le PDF dans une nouvelle fenêtre
+        const newWindow = window.open(blobUrl, '_blank');
+        
+        if (!newWindow) {
             throw new Error('Le navigateur a bloqué l\'ouverture de la fenêtre. Veuillez autoriser les pop-ups.');
         }
+        
+        // Déclencher l'impression après un court délai
+        setTimeout(() => {
+            newWindow.print();
+            // Nettoyer l'URL après impression
+            setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+        }, 500);
+        
     } catch (error) {
         console.error('Erreur lors de l\'impression de la feuille de route:', error);
         throw error;
@@ -424,8 +427,8 @@ export const printWaybill = async (trackingNumber) => {
 };
 
 /**
- * Télécharge la feuille de route
- * Télécharge le fichier HTML comme fichier .html
+ * Télécharge la feuille de route (PDF)
+ * Télécharge le fichier PDF sur l'ordinateur
  * @param {string} trackingNumber - Le numéro de suivi du colis
  */
 export const downloadWaybill = async (trackingNumber) => {
@@ -446,16 +449,16 @@ export const downloadWaybill = async (trackingNumber) => {
             throw new Error(`Erreur HTTP: ${response.status}`);
         }
 
-        const htmlContent = await response.text();
+        // Récupérer le PDF en tant que blob
+        const blob = await response.blob();
         
-        // Créer un blob et télécharger
-        const blob = new Blob([htmlContent], { type: 'text/html' });
+        // Créer une URL pour le blob
         const blobUrl = window.URL.createObjectURL(blob);
         
         // Créer un lien de téléchargement
         const link = document.createElement('a');
         link.href = blobUrl;
-        link.download = `feuille-route-${trackingNumber}.html`;
+        link.download = `feuille-route-${trackingNumber}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
