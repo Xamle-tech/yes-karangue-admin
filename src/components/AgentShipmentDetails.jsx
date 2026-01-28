@@ -283,16 +283,31 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
                 <div className="space-y-6">
                     {/* Photo Card */}
                     <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-                        {/* Placeholder Image */}
+                        {/* Package Photo */}
                         <div className="bg-gray-200 rounded-xl h-48 w-full mb-4 overflow-hidden relative">
-                            {/* In a real app, use shipment.photo_url */}
-                            <img src="https://placehold.co/600x400/e2e8f0/94a3b8?text=Colis" alt="Colis" className="w-full h-full object-cover" />
+                            {data.package_photo_url ? (
+                                <img 
+                                    src={data.package_photo_url} 
+                                    alt="Photo du colis" 
+                                    className="w-full h-full object-cover" 
+                                    onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = "https://placehold.co/600x400/e2e8f0/94a3b8?text=Photo+Indisponible";
+                                    }}
+                                />
+                            ) : (
+                                <img 
+                                    src="https://placehold.co/600x400/e2e8f0/94a3b8?text=Aucune+Photo" 
+                                    alt="Aucune photo" 
+                                    className="w-full h-full object-cover" 
+                                />
+                            )}
                         </div>
 
-                        <h3 className="text-[#5B9BAD] font-bold mb-2">Colis électronique</h3>
+                        <h3 className="text-[#5B9BAD] font-bold mb-2">{data.content_description || 'Colis'}</h3>
 
                         <span className="inline-block bg-gray-100 px-4 py-1 rounded-full text-sm font-bold text-gray-600">
-                            2 KG
+                            {data.weight_kg ? `${data.weight_kg} KG` : 'N/A'}
                         </span>
                     </div>
 
