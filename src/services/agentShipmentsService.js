@@ -427,6 +427,41 @@ export const printWaybill = async (trackingNumber) => {
 };
 
 /**
+ * Assigne un transporteur à un colis
+ * @param {string} trackingNumber - Le numéro de suivi du colis
+ * @param {number|null} transporterId - L'ID du transporteur (null pour retirer)
+ * @returns {Promise<Object>} Confirmation et détails du colis mis à jour
+ */
+export const assignTransporterToShipment = async (trackingNumber, transporterId) => {
+    try {
+        const url = buildUrl(`/api/v1/agent/shipments/${trackingNumber}/assign-transporter`);
+
+        const response = await authorizedFetch(url, {
+            method: 'POST',
+            headers: getDefaultHeaders(),
+            body: JSON.stringify({ transporter_id: transporterId }),
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('Colis ou transporteur non trouvé');
+            }
+            if (response.status === 422) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Erreur de validation');
+            }
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Erreur lors de l\'assignation du transporteur:', error);
+        throw error;
+    }
+};
+
+/**
  * Télécharge la feuille de route (PDF)
  * Télécharge le fichier PDF sur l'ordinateur
  * @param {string} trackingNumber - Le numéro de suivi du colis

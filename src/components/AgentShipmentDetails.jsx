@@ -12,10 +12,11 @@ import {
     Circle,
     AlertCircle
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import boxIcon from '../icons/box.png';
-import { printWaybill, downloadWaybill, updateAgentShipmentStatus } from '../services/agentShipmentsService';
+import { printWaybill, downloadWaybill, updateAgentShipmentStatus, assignTransporterToShipment } from '../services/agentShipmentsService';
 import { buildFileUrl } from '../config/api';
+import { fetchTransporters } from '../services/transporterService';
 
 export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
     // Use passed shipment or fallbacks
@@ -33,6 +34,13 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
+    
+    // États pour le transporteur
+    const [transporters, setTransporters] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isEditingTransporter, setIsEditingTransporter] = useState(false);
+    const [selectedTransporter, setSelectedTransporter] = useState(null);
+    const [isAssigningTransporter, setIsAssigningTransporter] = useState(false);
 
     const handlePrint = async () => {
         if (!data.tracking_number) {
@@ -69,6 +77,57 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
             setIsDownloading(false);
         }
     };
+
+    // Charger les transporteurs au montage du composant
+    useEffect(() => {
+        const loadTransporters = async () => {
+            try {
+                const response = await fetchTransporters({ limit: 200, offset: 0 });
+                const transportersList = Array.isArray(response) ? response : (response.data || []);
+                setTransporters(transportersList);
+            } catch (error) {
+                console.error('Erreur lors du chargement des transporteurs:', error);
+            }
+        };
+
+        loadTransporters();
+    }, []);
+
+    const handleAssignTransporter = async () => {
+        if (!selectedTransporter) {
+            setError('Veuillez sélectionner un transporteur');
+            return;
+        }
+
+        setIsAssigningTransporter(true);
+        setError(null);
+        setSuccessMessage(null);
+
+        try {
+            await assignTransporterToShipment(data.tracking_number, selectedTransporter.id);
+            setSuccessMessage('Transporteur assigné avec succès !');
+            setIsEditingTransporter(false);
+            
+            // Recharger la page après 1.5 secondes
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } catch (err) {
+            setError(err.message || 'Erreur lors de l\'assignation du transporteur');
+            console.error('Erreur assignation transporteur:', err);
+        } finally {
+            setIsAssigningTransporter(false);
+        }
+    };
+
+    const filteredTransporters = transporters.filter(t => {
+        if (!searchTerm) return true;
+        const search = searchTerm.toLowerCase();
+        return (
+            t.name?.toLowerCase().includes(search) ||
+            t.phone?.toLowerCase().includes(search)
+        );
+    });
 
     const handleStatusUpdate = async () => {
         // Vérifier que la prise en charge est déjà effectuée
@@ -299,16 +358,94 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
 
                     {/* Transporter */}
                     <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                        <h3 className="text-[#5B9BAD] font-bold mb-4">Transporteur</h3>
-                        <div className="flex items-center gap-4">
-                            <div className="bg-orange-50 p-3 rounded-full">
-                                <Car className="h-6 w-6 text-[#E8B44D]" />
-                            </div>
-                            <div>
-                                <p className="font-bold text-gray-900">Transport ABC</p>
-                                <p className="text-sm text-gray-400">SN-123-ABC</p>
-                            </div>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-[#5B9BAD] font-bold">Transporteur</h3>
+                            {!isEditingTransporter && (
+                                <button
+                                    onClick={() => setIsEditingTransporter(true)}
+                                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                                >
+                                    {data.carrier ? 'Modifier' : 'Assigner'}
+                                </button>
+                            )}
                         </div>
+
+                        {!isEditingTransporter ? (
+                            // Affichage du transporteur actuel
+                            data.carrier ? (
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-orange-50 p-3 rounded-full">
+                                        <Car className="h-6 w-6 text-[#E8B44D]" />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-gray-900">{data.carrier.name || 'Sans nom'}</p>
+                                        <p className="text-sm text-gray-400">{data.carrier.phone || 'N/A'}</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-4">
+                                    <div className="bg-gray-100 p-3 rounded-full inline-block mb-2">
+                                        <Car className="h-6 w-6 text-gray-400" />
+                                    </div>
+                                    <p className="text-sm text-gray-500">Aucun transporteur assigné</p>
+                                </div>
+                            )
+                        ) : (
+                            // Mode édition
+                            <div className="space-y-3">
+                                {/* Champ de recherche */}
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Rechercher par nom ou téléphone..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent"
+                                    />
+                                </div>
+
+                                {/* Liste des transporteurs filtrés */}
+                                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+                                    {filteredTransporters.length > 0 ? (
+                                        filteredTransporters.map((transporter) => (
+                                            <div
+                                                key={transporter.id}
+                                                onClick={() => setSelectedTransporter(transporter)}
+                                                className={`p-3 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
+                                                    selectedTransporter?.id === transporter.id ? 'bg-blue-50' : ''
+                                                }`}
+                                            >
+                                                <p className="font-medium text-sm text-gray-900">{transporter.name}</p>
+                                                <p className="text-xs text-gray-500">{transporter.phone}</p>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-center text-sm text-gray-500 py-4">Aucun transporteur trouvé</p>
+                                    )}
+                                </div>
+
+                                {/* Boutons d'action */}
+                                <div className="flex gap-2 pt-2">
+                                    <button
+                                        onClick={() => {
+                                            setIsEditingTransporter(false);
+                                            setSelectedTransporter(null);
+                                            setSearchTerm('');
+                                        }}
+                                        className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
+                                    >
+                                        Annuler
+                                    </button>
+                                    <button
+                                        onClick={handleAssignTransporter}
+                                        disabled={!selectedTransporter || isAssigningTransporter}
+                                        className="flex-1 px-3 py-2 bg-[#5B9BAD] text-white rounded-lg text-sm font-medium hover:bg-[#4A8A9B] disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isAssigningTransporter ? 'Assignation...' : 'Confirmer'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Gestionnaire */}
