@@ -341,10 +341,13 @@ export const receiveAgentShipmentByTrackingNumber = async (trackingNumber) => {
 export const downloadWaybillPDFByTrackingNumber = async (trackingNumber) => {
     try {
         const url = buildUrl(`/api/v1/agent/shipments/${trackingNumber}/waybill.pdf`);
+        const token = localStorage.getItem('authToken');
+        
+        // Récupérer le HTML avec authentification
         const response = await authorizedFetch(url, {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                'Authorization': `Bearer ${token}`
             },
         });
 
@@ -352,21 +355,26 @@ export const downloadWaybillPDFByTrackingNumber = async (trackingNumber) => {
             if (response.status === 404) {
                 throw new Error('Colis non trouvé');
             }
+            if (response.status === 401) {
+                throw new Error('Non authentifié - veuillez vous reconnecter');
+            }
             throw new Error(`Erreur HTTP: ${response.status}`);
         }
 
         // Lire la réponse comme texte (HTML)
         const htmlContent = await response.text();
         
-        // Créer un blob HTML et l'ouvrir dans un nouvel onglet
-        const blob = new Blob([htmlContent], { type: 'text/html' });
-        const blobUrl = window.URL.createObjectURL(blob);
-        window.open(blobUrl, '_blank');
+        // Ouvrir une nouvelle fenêtre et écrire le contenu HTML
+        const newWindow = window.open('', '_blank');
+        if (newWindow) {
+            newWindow.document.write(htmlContent);
+            newWindow.document.close();
+        } else {
+            throw new Error('Le navigateur a bloqué l\'ouverture de la fenêtre. Veuillez autoriser les pop-ups.');
+        }
         
-        // Nettoyer l'URL après un délai
-        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
-        
-        return blob;
+        // Retourner un blob vide pour compatibilité
+        return new Blob([''], { type: 'text/html' });
     } catch (error) {
         console.error('Erreur lors de l\'ouverture de la feuille de route:', error);
         throw error;
