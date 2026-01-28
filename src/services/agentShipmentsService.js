@@ -341,14 +341,10 @@ export const receiveAgentShipmentByTrackingNumber = async (trackingNumber) => {
 export const downloadWaybillPDFByTrackingNumber = async (trackingNumber) => {
     try {
         const url = buildUrl(`/api/v1/agent/shipments/${trackingNumber}/waybill.pdf`);
-        const token = localStorage.getItem('authToken');
         
         // Récupérer le HTML avec authentification
         const response = await authorizedFetch(url, {
             method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
         });
 
         if (!response.ok) {
@@ -389,13 +385,9 @@ export const downloadWaybillPDFByTrackingNumber = async (trackingNumber) => {
 export const printWaybill = async (trackingNumber) => {
     try {
         const url = buildUrl(`/api/v1/agent/shipments/${trackingNumber}/waybill.pdf`);
-        const token = localStorage.getItem('authToken');
         
         const response = await authorizedFetch(url, {
             method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
         });
 
         if (!response.ok) {
@@ -439,13 +431,9 @@ export const printWaybill = async (trackingNumber) => {
 export const downloadWaybill = async (trackingNumber) => {
     try {
         const url = buildUrl(`/api/v1/agent/shipments/${trackingNumber}/waybill.pdf`);
-        const token = localStorage.getItem('authToken');
         
         const response = await authorizedFetch(url, {
             method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
         });
 
         if (!response.ok) {
