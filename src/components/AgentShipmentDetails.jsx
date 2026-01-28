@@ -6,7 +6,6 @@ import {
     User,
     MapPin,
     Phone,
-    Mail,
     Car,
     CheckCircle,
     Clock,
@@ -310,11 +309,7 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-500 text-sm">Téléphone</span>
-                            <span className="text-gray-900 font-medium text-right">{data.sender_phone_number}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-500 text-sm">Email</span>
-                            <span className="text-gray-900 font-medium text-right break-all">{data.sender_email || 'N/A'}</span>
+                            <span className="text-gray-900 font-medium text-right">{data.sender_phone_number || 'N/A'}</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-500 text-sm">Numéro pièce</span>
@@ -335,15 +330,11 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-500 text-sm">Téléphone</span>
-                            <span className="text-gray-900 font-medium text-right">{data.recipient_phone_number}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-500 text-sm">Email</span>
-                            <span className="text-gray-900 font-medium text-right break-all">{data.recipient_email || 'N/A'}</span>
+                            <span className="text-gray-900 font-medium text-right">{data.recipient_phone_number || 'N/A'}</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-500 text-sm">Adresse</span>
-                            <span className="text-gray-900 font-medium text-right">{data.recipient_address}</span>
+                            <span className="text-gray-900 font-medium text-right">{data.recipient_address || 'N/A'}</span>
                         </div>
                     </div>
                 </div>
