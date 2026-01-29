@@ -99,7 +99,7 @@ export default function DashboardPage() {
     { name: 'Annulé', value: 0, color: '#EF4444' },
   ];
   const statusData = statusDataRaw.filter((d) => d.value > 0);
-  const totalForPie = statusData.reduce((sum, d) => sum + d.value, 0) || 1;
+  const totalForPie = totalShipments || 1;
 
   if (loading) {
     return <div className="p-8 text-center text-gray-500">Chargement du tableau de bord...</div>;
@@ -314,9 +314,9 @@ export default function DashboardPage() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            {/* Légende en grille sous le graphique */}
+            {/* Légende : tous les statuts (y compris à 0) */}
             <div className="mt-4 w-full grid grid-cols-2 gap-x-4 gap-y-2">
-              {statusData.map((entry, index) => {
+              {statusDataRaw.map((entry, index) => {
                 const percent = totalForPie ? ((entry.value / totalForPie) * 100).toFixed(1) : '0';
                 return (
                   <div key={index} className="flex items-center gap-2">
@@ -332,7 +332,7 @@ export default function DashboardPage() {
                 );
               })}
             </div>
-            {statusData.length === 0 && (
+            {totalShipments === 0 && (
               <p className="text-sm text-gray-500 py-4">Aucun colis sur la période.</p>
             )}
           </div>
