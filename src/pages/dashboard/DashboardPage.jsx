@@ -90,19 +90,16 @@ export default function DashboardPage() {
     { month: 'Juin', colis: 168, utilisateurs: 630 },
   ];
 
-  // Calcul des totaux pour les pourcentages
-  const totalForPie = totalShipments + (5); // Include cancelled mock
-  const enAttenteVal = pendingShipments;
-  const annuleVal = 5;
-  const livreVal = deliveredShipments;
-  const enTransitVal = totalShipments - pendingShipments - deliveredShipments;
-
-  const statusData = [
-    { name: 'En attente', value: enAttenteVal, color: '#D1D5DB' }, // Gray (Top-Right start)
-    { name: 'Annulé', value: annuleVal, color: '#EF4444' }, // Red
-    { name: 'Livré', value: livreVal, color: '#10B981' }, // Green
-    { name: 'En transit', value: enTransitVal, color: '#EAB308' }, // Yellow/Gold
+  // Distribution des statuts
+  const remainder = Math.max(0, totalShipments - pendingShipments - deliveredShipments);
+  const statusDataRaw = [
+    { name: 'En attente', value: pendingShipments, color: '#94A3B8' },
+    { name: 'En transit', value: remainder, color: '#EAB308' },
+    { name: 'Livré', value: deliveredShipments, color: '#10B981' },
+    { name: 'Annulé', value: 0, color: '#EF4444' },
   ];
+  const statusData = statusDataRaw.filter((d) => d.value > 0);
+  const totalForPie = statusData.reduce((sum, d) => sum + d.value, 0) || 1;
 
   if (loading) {
     return <div className="p-8 text-center text-gray-500">Chargement du tableau de bord...</div>;
@@ -276,48 +273,68 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </div>
 
-        {/* Donut Chart */}
+        {/* Donut Chart - Distribution des statuts */}
         <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-          <h2 className="text-lg font-bold text-gray-900 mb-6">Distribution des statuts</h2>
-          <div className="flex items-center justify-center h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={85}
-                  outerRadius={115}
-                  paddingAngle={0}
-                  dataKey="value"
-                  startAngle={90}
-                  endAngle={-270}
-                >
-                  {statusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#fff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                  }}
-                />
-                <Legend
-                  layout="vertical"
-                  verticalAlign="middle"
-                  align="right"
-                  iconType="circle"
-                  formatter={(value, entry) => {
-                    const { payload } = entry;
-                    const percent = ((payload.value / totalForPie) * 100).toFixed(0);
-                    return <span className="text-sm text-gray-600 font-medium ml-2">{value} • {percent}%</span>;
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Distribution des statuts</h2>
+          <div className="flex flex-col items-center">
+            <div className="w-full" style={{ height: 220 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                  <Pie
+                    data={statusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={85}
+                    paddingAngle={2}
+                    dataKey="value"
+                    nameKey="name"
+                    stroke="white"
+                    strokeWidth={2}
+                    startAngle={90}
+                    endAngle={-270}
+                  >
+                    {statusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value) => [value, 'colis']}
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                      padding: '10px 14px',
+                      fontSize: '13px'
+                    }}
+                    itemStyle={{ fontWeight: 600 }}
+                    labelFormatter={(label) => label}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            {/* Légende en grille sous le graphique */}
+            <div className="mt-4 w-full grid grid-cols-2 gap-x-4 gap-y-2">
+              {statusData.map((entry, index) => {
+                const percent = totalForPie ? ((entry.value / totalForPie) * 100).toFixed(1) : '0';
+                return (
+                  <div key={index} className="flex items-center gap-2">
+                    <span
+                      className="shrink-0 w-3 h-3 rounded-full"
+                      style={{ backgroundColor: entry.color }}
+                    />
+                    <span className="text-sm font-medium text-gray-700 truncate">{entry.name}</span>
+                    <span className="text-sm text-gray-500 ml-auto whitespace-nowrap">
+                      {entry.value} ({percent}%)
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            {statusData.length === 0 && (
+              <p className="text-sm text-gray-500 py-4">Aucun colis sur la période.</p>
+            )}
           </div>
         </div>
       </div>
