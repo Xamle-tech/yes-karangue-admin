@@ -20,7 +20,7 @@ import { fetchTransporters } from '../services/transporterService';
 
 export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
     // Use passed shipment or fallbacks
-    const data = shipment || {
+    const initialData = shipment || {
         id: shipmentId,
         tracking_number: 'YK-2025-05',
         created_at: new Date(),
@@ -28,6 +28,8 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
         // ... mocked data if null, but it should be passed
     };
 
+    // État local pour les données du colis (peut être mis à jour sans recharger)
+    const [data, setData] = useState(initialData);
     const [selectedStatus, setSelectedStatus] = useState(data.status);
     const [isPrinting, setIsPrinting] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
@@ -78,6 +80,14 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
         }
     };
 
+    // Mettre à jour les données si les props changent
+    useEffect(() => {
+        if (shipment) {
+            setData(shipment);
+            setSelectedStatus(shipment.status);
+        }
+    }, [shipment]);
+
     // Charger les transporteurs au montage du composant
     useEffect(() => {
         const loadTransporters = async () => {
@@ -104,14 +114,21 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
         setSuccessMessage(null);
 
         try {
-            await assignTransporterToShipment(data.tracking_number, selectedTransporter.id);
+            const response = await assignTransporterToShipment(data.tracking_number, selectedTransporter.id);
             setSuccessMessage('Transporteur assigné avec succès !');
             setIsEditingTransporter(false);
+            setSelectedTransporter(null);
+            setSearchTerm('');
             
-            // Recharger la page après 1.5 secondes
+            // Mettre à jour les données localement avec la réponse de l'API
+            if (response.shipment) {
+                setData(response.shipment);
+            }
+            
+            // Masquer le message de succès après 3 secondes
             setTimeout(() => {
-                window.location.reload();
-            }, 1500);
+                setSuccessMessage(null);
+            }, 3000);
         } catch (err) {
             setError(err.message || 'Erreur lors de l\'assignation du transporteur');
             console.error('Erreur assignation transporteur:', err);
@@ -154,17 +171,23 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
         setSuccessMessage(null);
 
         try {
-            await updateAgentShipmentStatus(data.tracking_number, {
+            const updatedShipment = await updateAgentShipmentStatus(data.tracking_number, {
                 new_status: 'EN_COURS_LIVRAISON',
                 event_time: new Date().toISOString()
             });
 
             setSuccessMessage('Le statut a été mis à jour avec succès !');
             
-            // Recharger la page après 1.5 secondes pour afficher les nouveaux changements
+            // Mettre à jour les données localement avec la réponse de l'API
+            if (updatedShipment) {
+                setData(updatedShipment);
+                setSelectedStatus(updatedShipment.status);
+            }
+            
+            // Masquer le message de succès après 3 secondes
             setTimeout(() => {
-                window.location.reload();
-            }, 1500);
+                setSuccessMessage(null);
+            }, 3000);
         } catch (err) {
             setError(err.message || 'Erreur lors de la mise à jour du statut');
             console.error('Erreur mise à jour statut:', err);
