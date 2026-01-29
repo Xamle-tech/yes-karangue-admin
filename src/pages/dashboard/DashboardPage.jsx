@@ -132,11 +132,9 @@ export default function DashboardPage() {
     },
   ];
 
-  const topTransporters = [
-    { name: 'Transport ABC', deliveries: 245, rating: 4.8 },
-    { name: 'Logistique XYZ', deliveries: 198, rating: 4.6 },
-    { name: 'Express Sénégal', deliveries: 167, rating: 4.7 },
-  ];
+  // Top 3 transporteurs par nombre de livraisons (données API)
+  const topTransporters = dashboardData?.top_transporters ?? [];
+  const maxDeliveries = topTransporters.length ? Math.max(...topTransporters.map((t) => t.deliveries)) : 1;
 
   const getStatusColor = (status) => {
     const colors = {
@@ -397,27 +395,32 @@ export default function DashboardPage() {
           </div>
 
           <div className="space-y-4">
-            {topTransporters.map((transporter, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-4"
-              >
-                <div className="w-32 text-sm font-medium text-gray-700 truncate">{transporter.name}</div>
-                <div className="flex-1">
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[#EAB308] rounded-full"
-                      style={{ width: `${(transporter.deliveries / 300) * 100}%` }}
-                    />
+            {topTransporters.length === 0 ? (
+              <p className="text-sm text-gray-500 py-4">Aucun transporteur avec des livraisons sur la période.</p>
+            ) : (
+              topTransporters.map((transporter, idx) => (
+                <div
+                  key={transporter.id ?? idx}
+                  className="flex items-center gap-4"
+                >
+                  <div className="min-w-[120px]">
+                    <p className="text-sm font-medium text-gray-700 truncate">{transporter.name}</p>
+                    {transporter.phone && (
+                      <p className="text-xs text-gray-500 truncate">{transporter.phone}</p>
+                    )}
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">{transporter.deliveries} livraisons</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[#EAB308] rounded-full transition-all"
+                        style={{ width: `${Math.min(100, (transporter.deliveries / maxDeliveries) * 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">{transporter.deliveries} livraison{transporter.deliveries > 1 ? 's' : ''}</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 min-w-[3rem] justify-end">
-                  <span className="text-sm font-bold text-gray-900">{transporter.rating}</span>
-                  <span className="text-yellow-400 text-xs">⭐</span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
