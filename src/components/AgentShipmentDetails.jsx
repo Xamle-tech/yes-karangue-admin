@@ -148,7 +148,7 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
 
     const handleStatusUpdate = async () => {
         // Vérifier que la prise en charge est déjà effectuée
-        const isPriseEnChargeCompleted = ['PRISE_EN_CHARGE', 'EN_COURS_LIVRAISON', 'RECUPERE', 'LIVRE'].includes(data.status);
+        const isPriseEnChargeCompleted = ['PRISE_EN_CHARGE', 'EN_COURS_LIVRAISON', 'EN_COURS_DE_LIVRAISON', 'RECUPERE', 'ARRIVE', 'LIVRE'].includes(data.status);
         
         if (!isPriseEnChargeCompleted) {
             setError('Le colis doit d\'abord être pris en charge avant de passer en cours de livraison');
@@ -156,7 +156,7 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
         }
 
         // Vérifier qu'on n'est pas déjà en cours de livraison ou au-delà
-        if (['EN_COURS_LIVRAISON', 'RECUPERE', 'LIVRE'].includes(data.status)) {
+        if (['EN_COURS_LIVRAISON', 'EN_COURS_DE_LIVRAISON', 'RECUPERE', 'ARRIVE', 'LIVRE'].includes(data.status)) {
             setError('Le statut "En cours de livraison" est déjà atteint ou dépassé');
             return;
         }
@@ -172,7 +172,7 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
 
         try {
             const updatedShipment = await updateAgentShipmentStatus(data.tracking_number, {
-                new_status: 'EN_COURS_LIVRAISON',
+                new_status: 'EN_COURS_DE_LIVRAISON',
                 event_time: new Date().toISOString()
             });
 
@@ -203,28 +203,28 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
             key: 'DEPOT',
             label: 'Dépôt du colis',
             desc: 'Le colis a été déposé',
-            completed: ['DEPOT', 'PRISE_EN_CHARGE', 'EN_COURS_LIVRAISON', 'RECUPERE', 'LIVRE'].includes(data.status)
+            completed: ['DEPOT', 'PRISE_EN_CHARGE', 'EN_COURS_LIVRAISON', 'EN_COURS_DE_LIVRAISON', 'RECUPERE', 'ARRIVE', 'LIVRE'].includes(data.status)
         },
         {
             id: 2,
             key: 'PRISE_EN_CHARGE',
             label: 'Prise en charge',
             desc: 'Le transporteur a pris en charge le colis',
-            completed: ['PRISE_EN_CHARGE', 'EN_COURS_LIVRAISON', 'RECUPERE', 'LIVRE'].includes(data.status)
+            completed: ['PRISE_EN_CHARGE', 'EN_COURS_LIVRAISON', 'EN_COURS_DE_LIVRAISON', 'RECUPERE', 'ARRIVE', 'LIVRE'].includes(data.status)
         },
         {
             id: 3,
             key: 'EN_COURS_LIVRAISON',
             label: 'En cours de livraison',
             desc: 'Le colis est en route vers sa destination',
-            completed: ['EN_COURS_LIVRAISON', 'RECUPERE', 'LIVRE'].includes(data.status)
+            completed: ['EN_COURS_LIVRAISON', 'EN_COURS_DE_LIVRAISON', 'RECUPERE', 'ARRIVE', 'LIVRE'].includes(data.status)
         },
         {
             id: 4,
             key: 'RECUPERE',
             label: 'Arrivé',
             desc: 'Au point de retrait',
-            completed: ['RECUPERE', 'LIVRE'].includes(data.status),
+            completed: ['RECUPERE', 'ARRIVE', 'LIVRE'].includes(data.status),
             disabled: true // Automatic
         },
         {
@@ -242,8 +242,10 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
         switch (status) {
             case 'DEPOT': return { label: 'Dépôt', color: 'text-gray-500', bg: 'bg-gray-100' };
             case 'PRISE_EN_CHARGE': return { label: 'Prise en charge', color: 'text-[#5B9BAD]', bg: 'bg-[#EFF8FA]' };
-            case 'EN_COURS_LIVRAISON': return { label: 'En cours', color: 'text-[#E8B44D]', bg: 'bg-[#FEF9EA]' };
-            case 'RECUPERE': return { label: 'Récupéré', color: 'text-purple-600', bg: 'bg-purple-50' };
+            case 'EN_COURS_LIVRAISON':
+            case 'EN_COURS_DE_LIVRAISON': return { label: 'En cours', color: 'text-[#E8B44D]', bg: 'bg-[#FEF9EA]' };
+            case 'RECUPERE':
+            case 'ARRIVE': return { label: 'Récupéré', color: 'text-purple-600', bg: 'bg-purple-50' };
             case 'LIVRE': return { label: 'Livré', color: 'text-green-600', bg: 'bg-green-50' };
             default: return { label: status, color: 'text-gray-600', bg: 'bg-gray-50' };
         }
@@ -357,8 +359,8 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
                                     {
                                         data.status === 'DEPOT' ? '1/5' :
                                             data.status === 'PRISE_EN_CHARGE' ? '2/5' :
-                                                data.status === 'EN_COURS_LIVRAISON' ? '3/5' :
-                                                    data.status === 'RECUPERE' ? '4/5' :
+                                                (data.status === 'EN_COURS_LIVRAISON' || data.status === 'EN_COURS_DE_LIVRAISON') ? '3/5' :
+                                                    (data.status === 'RECUPERE' || data.status === 'ARRIVE') ? '4/5' :
                                                         data.status === 'LIVRE' ? '5/5' : '0/5'
                                     }
                                 </span>
@@ -369,8 +371,8 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
                                     style={{
                                         width: `${data.status === 'DEPOT' ? 20 :
                                             data.status === 'PRISE_EN_CHARGE' ? 40 :
-                                                data.status === 'EN_COURS_LIVRAISON' ? 60 :
-                                                    data.status === 'RECUPERE' ? 80 :
+                                                (data.status === 'EN_COURS_LIVRAISON' || data.status === 'EN_COURS_DE_LIVRAISON') ? 60 :
+                                                    (data.status === 'RECUPERE' || data.status === 'ARRIVE') ? 80 :
                                                         data.status === 'LIVRE' ? 100 : 0
                                             }%`
                                     }}
@@ -569,7 +571,7 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
                         <div className="space-y-4 flex-1">
                             {steps.map((step) => {
                                 const isManualStep = step.key === 'EN_COURS_LIVRAISON';
-                                const isPriseEnChargeCompleted = ['PRISE_EN_CHARGE', 'EN_COURS_LIVRAISON', 'RECUPERE', 'LIVRE'].includes(data.status);
+                                const isPriseEnChargeCompleted = ['PRISE_EN_CHARGE', 'EN_COURS_LIVRAISON', 'EN_COURS_DE_LIVRAISON', 'RECUPERE', 'ARRIVE', 'LIVRE'].includes(data.status);
                                 const canBeUpdated = isManualStep && isPriseEnChargeCompleted && !step.completed;
 
                                 return (
@@ -628,8 +630,8 @@ export default function AgentShipmentDetails({ shipmentId, shipment, onBack }) {
                             </div>
 
                             {(() => {
-                                const isPriseEnChargeCompleted = ['PRISE_EN_CHARGE', 'EN_COURS_LIVRAISON', 'RECUPERE', 'LIVRE'].includes(data.status);
-                                const isAlreadyEnCours = ['EN_COURS_LIVRAISON', 'RECUPERE', 'LIVRE'].includes(data.status);
+                                const isPriseEnChargeCompleted = ['PRISE_EN_CHARGE', 'EN_COURS_LIVRAISON', 'EN_COURS_DE_LIVRAISON', 'RECUPERE', 'ARRIVE', 'LIVRE'].includes(data.status);
+                                const isAlreadyEnCours = ['EN_COURS_LIVRAISON', 'EN_COURS_DE_LIVRAISON', 'RECUPERE', 'ARRIVE', 'LIVRE'].includes(data.status);
                                 const canUpdate = isPriseEnChargeCompleted && !isAlreadyEnCours;
 
                                 return (
