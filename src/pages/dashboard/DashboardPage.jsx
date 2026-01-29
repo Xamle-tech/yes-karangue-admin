@@ -1,5 +1,5 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, Package, Users, DollarSign, AlertCircle, ArrowRight, Calendar, Download, ChevronDown } from 'lucide-react';
+import { TrendingUp, Package, Users, DollarSign, ArrowRight, Calendar, Download, ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { fetchDashboardStats } from '../../services/dashboardService';
 
@@ -28,9 +28,6 @@ export default function DashboardPage() {
   const pendingShipments = dashboardData?.pending_shipments || 0;
   const deliveredShipments = dashboardData?.delivered_shipments || 0;
   const totalRevenue = dashboardData?.total_revenue || 0;
-
-  // Calculs simples pour les pourcentages (mock simulé pour l'instant car l'API ne donne pas encore l'évolution)
-  const reportedIssues = dashboardData?.reported_issues || 72; // Nombre de problèmes signalés
 
   const stats = [
     {
@@ -69,24 +66,17 @@ export default function DashboardPage() {
     {
       icon: DollarSign,
       label: 'Revenus ce mois',
-      value: `${(totalRevenue / 1000000).toFixed(1)}M FCFA`,
+      value: totalRevenue >= 1000000 
+        ? `${(totalRevenue / 1000000).toFixed(1)}M FCFA`
+        : totalRevenue >= 1000
+        ? `${(totalRevenue / 1000).toFixed(0)}K FCFA`
+        : `${totalRevenue.toFixed(0)} FCFA`,
       change: '+15%',
       isPositive: true,
       subLabel: 'vs le dernier mois',
       iconBg: 'bg-teal-50',
       iconColor: 'text-teal-600',
       trendColor: 'text-green-600'
-    },
-    {
-      icon: AlertCircle,
-      label: 'Problèmes signalés',
-      value: reportedIssues,
-      change: '-2%',
-      isPositive: false,
-      subLabel: 'vs le dernier mois',
-      iconBg: 'bg-red-50',
-      iconColor: 'text-red-600',
-      trendColor: 'text-red-600'
     },
   ];
 
@@ -193,8 +183,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Stats Grid - Updated to 5 columns */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* Stats Grid - 4 columns */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, idx) => {
           const Icon = stat.icon;
           return (
