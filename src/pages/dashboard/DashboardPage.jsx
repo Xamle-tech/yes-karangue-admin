@@ -28,6 +28,7 @@ export default function DashboardPage() {
   const pendingShipments = dashboardData?.pending_shipments || 0;
   const deliveredShipments = dashboardData?.delivered_shipments || 0;
   const totalRevenue = dashboardData?.total_revenue || 0;
+  const activeUsers = dashboardData?.active_users ?? 0;
 
   const stats = [
     {
@@ -55,10 +56,10 @@ export default function DashboardPage() {
     {
       icon: Users,
       label: 'Utilisateurs actifs',
-      value: '1248',
+      value: activeUsers,
       change: '+8%',
       isPositive: true,
-      subLabel: 'vs le dernier mois',
+      subLabel: 'clients ayant envoyé au moins un colis',
       iconBg: 'bg-blue-50',
       iconColor: 'text-blue-600',
       trendColor: 'text-green-600'
