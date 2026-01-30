@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/auth/LoginPage';
+import SetPasswordPage from './pages/auth/SetPasswordPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import AgentDashboardPage from './pages/agent/AgentDashboardPage';
 import ClientsPage from './pages/clients/ClientsPage';
@@ -45,6 +46,7 @@ function App() {
           <>
             <Route path="/" element={<LoginPage onLogin={handleLogin} />} />
             <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+            <Route path="/set-password" element={<SetPasswordPage />} />
             <Route path="*" element={<Navigate to="/login" replace />} />
           </>
         ) : (
