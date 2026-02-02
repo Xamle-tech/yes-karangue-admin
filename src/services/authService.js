@@ -123,25 +123,29 @@ export const login = async (email, password) => {
 };
 
 /**
- * Rafraîchit le token d'accès en utilisant le cookie refresh_token
+ * Rafraîchit le token d'accès en utilisant le refresh token du localStorage
  * @returns {Promise<string>} Le nouveau token d'accès
  */
 export const refreshToken = async () => {
     try {
-        const token = getStorageItem('authToken');
+        const refreshToken = getStorageItem('refreshToken');
+        
+        if (!refreshToken) {
+            console.error('❌ Aucun refresh token trouvé');
+            throw new Error('Refresh token manquant');
+        }
+
         const headers = {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         };
 
-        // On retire l'Authorization header pour éviter que le middleware ne bloque le token expiré
-        // Le refresh se base uniquement sur le cookie httpOnly ou le body si implémenté ainsi
-
         const response = await fetch(buildUrl(AUTH_ENDPOINTS.REFRESH_TOKEN), {
             method: 'POST',
             headers: headers,
-            credentials: 'include', // Important pour envoyer le cookie refresh_token
-            body: JSON.stringify({}), // Corps JSON vide valide
+            body: JSON.stringify({
+                refresh_token: refreshToken
+            }),
         });
 
         if (!response.ok) {
@@ -153,19 +157,22 @@ export const refreshToken = async () => {
         const data = await response.json();
 
         if (data.access_token) {
-            // Déterminer où sauvegarder le nouveau token (si localStorage a l'ancien, on remet dans localStorage, sinon sessionStorage)
+            // Déterminer où sauvegarder le nouveau token
             const isPersistent = localStorage.getItem('authToken') !== null;
             setStorageItem('authToken', data.access_token, isPersistent);
+            
+            // Sauvegarder le nouveau refresh token si fourni
+            if (data.refresh_token) {
+                setStorageItem('refreshToken', data.refresh_token, isPersistent);
+            }
+            
+            console.log('✅ Token rafraîchi avec succès');
             return data.access_token;
         }
 
         throw new Error('Token non reçu');
     } catch (error) {
         console.error('Erreur lors du rafraîchissement du token:', error);
-        // Si le refresh échoue, on ne déconnecte PAS automatiquement pour le moment pour debug
-        // if (error.message.includes('Échec') || error.message.includes('Token non reçu')) {
-        //      logout(); 
-        // }
         throw error;
     }
 };
@@ -238,6 +245,11 @@ export const saveAuthData = (authData, rememberMe = true) => {
         // Sauvegarder le token
         if (authData.access_token) {
             setStorageItem('authToken', authData.access_token, rememberMe);
+        }
+
+        // Sauvegarder le refresh token
+        if (authData.refresh_token) {
+            setStorageItem('refreshToken', authData.refresh_token, rememberMe);
         }
 
         // Sauvegarder le rôle
