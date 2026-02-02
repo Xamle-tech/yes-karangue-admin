@@ -23,12 +23,12 @@ export default function DashboardPage() {
     loadStats();
   }, []);
 
-  // Valeurs par défaut ou issues de l'API
-  const totalShipments = dashboardData?.total_shipments || 0;
-  const pendingShipments = dashboardData?.pending_shipments || 0;
-  const deliveredShipments = dashboardData?.delivered_shipments || 0;
-  const totalRevenue = dashboardData?.total_revenue || 0;
-  const activeUsers = dashboardData?.active_users ?? 0;
+  // Valeurs par défaut ou issues de l'API (forcer en nombre pour éviter .toFixed sur string)
+  const totalShipments = Number(dashboardData?.total_shipments) || 0;
+  const pendingShipments = Number(dashboardData?.pending_shipments) || 0;
+  const deliveredShipments = Number(dashboardData?.delivered_shipments) || 0;
+  const totalRevenue = Number(dashboardData?.total_revenue) || 0;
+  const activeUsers = Number(dashboardData?.active_users) || 0;
 
   const stats = [
     {
@@ -70,8 +70,8 @@ export default function DashboardPage() {
       value: totalRevenue >= 1000000 
         ? `${(totalRevenue / 1000000).toFixed(1)}M FCFA`
         : totalRevenue >= 1000
-        ? `${(totalRevenue / 1000).toFixed(0)}K FCFA`
-        : `${totalRevenue.toFixed(0)} FCFA`,
+        ? `${Math.floor(totalRevenue / 1000)}K FCFA`
+        : `${Math.floor(totalRevenue)} FCFA`,
       change: '+15%',
       isPositive: true,
       subLabel: 'vs le dernier mois',
@@ -333,7 +333,8 @@ export default function DashboardPage() {
             {/* Légende : tous les statuts (y compris à 0) */}
             <div className="mt-4 w-full grid grid-cols-2 gap-x-4 gap-y-2">
               {statusDataRaw.map((entry, index) => {
-                const percent = totalForPie ? ((entry.value / totalForPie) * 100).toFixed(1) : '0';
+                const val = Number(entry.value) || 0;
+                const percent = totalForPie ? ((val / totalForPie) * 100).toFixed(1) : '0';
                 return (
                   <div key={index} className="flex items-center gap-2">
                     <span
@@ -342,7 +343,7 @@ export default function DashboardPage() {
                     />
                     <span className="text-sm font-medium text-gray-700 truncate">{entry.name}</span>
                     <span className="text-sm text-gray-500 ml-auto whitespace-nowrap">
-                      {entry.value} ({percent}%)
+                      {val} ({percent}%)
                     </span>
                   </div>
                 );
