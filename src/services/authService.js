@@ -385,12 +385,6 @@ export const authorizedFetch = async (url, options = {}) => {
     const headers = options.headers || {};
     const token = getAuthToken();
     
-    if (!token) {
-        console.error('❌ Aucun token trouvé dans le storage');
-    } else {
-        console.log('✅ Token trouvé, ajout dans les headers');
-    }
-    
     if (token && !headers['Authorization']) {
         headers['Authorization'] = `Bearer ${token}`;
     }

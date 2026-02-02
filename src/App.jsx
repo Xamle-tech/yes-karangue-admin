@@ -25,7 +25,7 @@ function App() {
 
   const handleLogout = () => {
     // Clear all potential auth items from both storages
-    ['authToken', 'userRole', 'userEmail', 'userData', 'entrepriseName'].forEach(key => {
+    ['authToken', 'refreshToken', 'userRole', 'userEmail', 'userData', 'entrepriseName', 'userName'].forEach(key => {
       localStorage.removeItem(key);
       sessionStorage.removeItem(key);
     });

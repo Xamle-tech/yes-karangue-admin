@@ -100,9 +100,25 @@ export default function DashboardPage() {
   ];
   const statusData = statusDataRaw.filter((d) => d.value > 0);
   const totalForPie = totalShipments || 1;
+  const hasPieData = statusData.length > 0;
 
   if (loading) {
     return <div className="p-8 text-center text-gray-500">Chargement du tableau de bord...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600 mb-4">{error}</p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium"
+        >
+          Réessayer
+        </button>
+      </div>
+    );
   }
 
   const recentShipments = [
@@ -133,8 +149,10 @@ export default function DashboardPage() {
   ];
 
   // Top 3 transporteurs par nombre de livraisons (données API)
-  const topTransporters = dashboardData?.top_transporters ?? [];
-  const maxDeliveries = topTransporters.length ? Math.max(...topTransporters.map((t) => t.deliveries)) : 1;
+  const topTransporters = Array.isArray(dashboardData?.top_transporters) ? dashboardData.top_transporters : [];
+  const maxDeliveries = topTransporters.length
+    ? Math.max(...topTransporters.map((t) => Number(t.deliveries) || 0), 1)
+    : 1;
 
   const getStatusColor = (status) => {
     const colors = {
@@ -279,12 +297,12 @@ export default function DashboardPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                   <Pie
-                    data={statusData}
+                    data={hasPieData ? statusData : [{ name: 'Aucun', value: 1, color: '#E5E7EB' }]}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
                     outerRadius={85}
-                    paddingAngle={2}
+                    paddingAngle={hasPieData ? 2 : 0}
                     dataKey="value"
                     nameKey="name"
                     stroke="white"
@@ -292,7 +310,7 @@ export default function DashboardPage() {
                     startAngle={90}
                     endAngle={-270}
                   >
-                    {statusData.map((entry, index) => (
+                    {(hasPieData ? statusData : [{ color: '#E5E7EB' }]).map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -398,28 +416,31 @@ export default function DashboardPage() {
             {topTransporters.length === 0 ? (
               <p className="text-sm text-gray-500 py-4">Aucun transporteur avec des livraisons sur la période.</p>
             ) : (
-              topTransporters.map((transporter, idx) => (
-                <div
-                  key={transporter.id ?? idx}
-                  className="flex items-center gap-4"
-                >
-                  <div className="min-w-[120px]">
-                    <p className="text-sm font-medium text-gray-700 truncate">{transporter.name}</p>
-                    {transporter.phone && (
-                      <p className="text-xs text-gray-500 truncate">{transporter.phone}</p>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-[#EAB308] rounded-full transition-all"
-                        style={{ width: `${Math.min(100, (transporter.deliveries / maxDeliveries) * 100)}%` }}
-                      />
+              topTransporters.map((transporter, idx) => {
+                const deliveries = Number(transporter.deliveries) || 0;
+                return (
+                  <div
+                    key={transporter.id ?? idx}
+                    className="flex items-center gap-4"
+                  >
+                    <div className="min-w-[120px]">
+                      <p className="text-sm font-medium text-gray-700 truncate">{transporter.name ?? '—'}</p>
+                      {transporter.phone && (
+                        <p className="text-xs text-gray-500 truncate">{transporter.phone}</p>
+                      )}
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">{transporter.deliveries} livraison{transporter.deliveries > 1 ? 's' : ''}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-[#EAB308] rounded-full transition-all"
+                          style={{ width: `${Math.min(100, maxDeliveries > 0 ? (deliveries / maxDeliveries) * 100 : 0)}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">{deliveries} livraison{deliveries !== 1 ? 's' : ''}</p>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
