@@ -45,7 +45,6 @@ export const login = async (email, password) => {
                     email: email,
                     password: password,
                 }),
-                credentials: 'include', // Important pour recevoir le cookie httpOnly
             });
         } catch (networkError) {
             console.warn("Backend unavailable, using MOCK login");
@@ -373,13 +372,15 @@ export const authorizedFetch = async (url, options = {}) => {
     // S'assurer que les headers existent et incluent l'auth
     const headers = options.headers || {};
     const token = getAuthToken();
+    
+    if (!token) {
+        console.error('❌ Aucun token trouvé dans le storage');
+    } else {
+        console.log('✅ Token trouvé, ajout dans les headers');
+    }
+    
     if (token && !headers['Authorization']) {
         headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    // Configurer credentials par défaut si non spécifié
-    if (options.credentials === undefined) {
-        options.credentials = 'include';
     }
 
     const config = { ...options, headers };
