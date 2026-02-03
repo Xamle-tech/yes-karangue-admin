@@ -5,7 +5,7 @@ import TransporterForm from '../../components/forms/TransporterForm';
 import TransporterDetails from '../../components/TransporterDetails';
 import ConfirmationModal from '../../components/modals/ConfirmationModal';
 import SuccessModal from '../../components/modals/SuccessModal';
-import { fetchTransporters, createTransporter, updateTransporter, deleteTransporter } from '../../services/transporterService';
+import { fetchTransporters, createTransporter, updateTransporter, deleteTransporter, fetchTransportersStatistics } from '../../services/transporterService';
 import Toast from '../../components/Toast';
 
 // Fonction utilitaire pour obtenir les initiales
@@ -29,21 +29,10 @@ export default function TransportersPage() {
   const [viewMode, setViewMode] = useState('list');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [transporterStats, setTransporterStats] = useState({ by_station: [], by_vehicle_type: [] });
 
-  // Mock data for charts
-  const barChartData = [
-    { name: 'Gare Nord', value: 10 },
-    { name: 'Gare Sud', value: 8 },
-    { name: 'Gare Centrale', value: 5 },
-    { name: 'Gare Ouest', value: 3 },
-  ];
-
-  const pieChartData = [
-    { name: '7 places', value: 45, color: '#4CAF50' },
-    { name: 'Minis bus', value: 30, color: '#E8B44D' },
-    { name: 'Car rapide', value: 5, color: '#F44336' },
-    { name: 'Autres', value: 20, color: '#9E9E9E' },
-  ];
+  // Couleurs pour le graphique par type de véhicule
+  const VEHICLE_COLORS = ['#4CAF50', '#E8B44D', '#5B9BAD', '#F44336', '#9E9E9E', '#2196F3', '#FF9800'];
 
   const [deleteModal, setDeleteModal] = useState({ show: false, transporterId: null, transporterName: '' });
   const [successModal, setSuccessModal] = useState({ show: false, message: '' });
@@ -54,9 +43,7 @@ export default function TransportersPage() {
     try {
       setLoading(true);
       setError(null);
-      // Passer le paramètre offset=0 comme demandé
       const data = await fetchTransporters({ offset: 0 });
-
       const transportersData = Array.isArray(data) ? data : (data.data || []);
       setTransporters(transportersData);
     } catch (error) {
@@ -67,8 +54,22 @@ export default function TransportersPage() {
     }
   };
 
+  const loadStats = async () => {
+    try {
+      const data = await fetchTransportersStatistics();
+      setTransporterStats({
+        by_station: Array.isArray(data.by_station) ? data.by_station : [],
+        by_vehicle_type: Array.isArray(data.by_vehicle_type) ? data.by_vehicle_type : [],
+      });
+    } catch (err) {
+      console.error('Erreur stats transporteurs:', err);
+      setTransporterStats({ by_station: [], by_vehicle_type: [] });
+    }
+  };
+
   useEffect(() => {
     loadTransporters();
+    loadStats();
   }, []);
 
   const filteredTransporters = transporters.filter(
@@ -94,6 +95,7 @@ export default function TransportersPage() {
       setShowForm(false);
       setEditingTransporter(null);
       loadTransporters();
+      loadStats();
     } catch (error) {
       console.error("Erreur sauvegarde transporteur:", error);
       setToast({ message: error.message || "Erreur lors de l'opération", type: 'error' });
@@ -114,7 +116,7 @@ export default function TransportersPage() {
     setIsDeleting(true);
     try {
       await deleteTransporter(deleteModal.transporterId);
-      // setToast({ message: 'Transporteur supprimé avec succès', type: 'success' });
+      loadStats();
       // Use success modal for delete too? "popup de confirmationen cas de reussite des endpoint". Assume yes.
       // But maybe the deletion is quick. I'll stick to Toast for deletion unless asked, but user said "endpoints" plural.
       // Image only showed Create/Update messages. I'll stick to toast for delete for now or check if there was a delete success image. 
@@ -376,57 +378,60 @@ export default function TransportersPage() {
         </div>
       </div>
 
-      {/* Charts Section */}
+      {/* Charts Section - données réelles */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Bar Chart */}
+        {/* Bar Chart: Transporteurs par point relais */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">Transporteurs par gare routière</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-6">Transporteurs par point relais</h3>
           <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={barChartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
-                <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={100} tick={{ fontSize: 12, fill: '#6B7280' }} />
-                <Tooltip
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  cursor={{ fill: '#F9FAFB' }}
-                />
-                <Bar dataKey="value" fill="#E8B44D" radius={[0, 4, 4, 0]} barSize={20} />
-              </BarChart>
-            </ResponsiveContainer>
+            {transporterStats.by_station.length === 0 ? (
+              <p className="text-gray-500 text-sm flex items-center justify-center h-full">Aucune donnée</p>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={transporterStats.by_station.map((s) => ({ name: s.station_name || 'Non assigné', value: s.count }))}
+                  layout="vertical"
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
+                  <XAxis type="number" hide />
+                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={120} tick={{ fontSize: 12, fill: '#6B7280' }} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} cursor={{ fill: '#F9FAFB' }} />
+                  <Bar dataKey="value" fill="#E8B44D" radius={[0, 4, 4, 0]} barSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
-        {/* Pie Chart */}
+        {/* Pie Chart: Transporteurs par type de véhicule */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
           <h3 className="text-lg font-bold text-gray-900 mb-6">Transporteurs par type de véhicule</h3>
           <div className="h-[250px] w-full flex items-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieChartData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={0}
-                  dataKey="value"
-                >
-                  {pieChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend
-                  layout="vertical"
-                  verticalAlign="middle"
-                  align="right"
-                  iconType="circle"
-                  iconSize={8}
-                  wrapperStyle={{ fontSize: '12px', color: '#6B7280' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            {transporterStats.by_vehicle_type.length === 0 ? (
+              <p className="text-gray-500 text-sm flex items-center justify-center w-full h-full">Aucune donnée</p>
+            ) : (
+              (() => {
+                const pieData = transporterStats.by_vehicle_type.map((v, i) => ({
+                  name: (v.vehicle_type || 'Autre').replace(/_/g, ' '),
+                  value: v.count,
+                  color: VEHICLE_COLORS[i % VEHICLE_COLORS.length],
+                }));
+                return (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={0} dataKey="value">
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px', color: '#6B7280' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                );
+              })()
+            )}
           </div>
         </div>
       </div>

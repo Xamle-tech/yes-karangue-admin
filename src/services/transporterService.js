@@ -107,6 +107,25 @@ export const updateTransporter = async (id, formData) => {
 };
 
 /**
+ * Récupère les statistiques des transporteurs (par point relais, par type de véhicule)
+ * @returns {Promise<Object>} { total_transporters, by_station, by_vehicle_type, ... }
+ */
+export const fetchTransportersStatistics = async () => {
+    try {
+        const url = buildUrl(`${AUTH_ENDPOINTS.ADMIN_TRANSPORTERS}/statistics`);
+        const response = await authorizedFetch(url, {
+            method: 'GET',
+            headers: getDefaultHeaders(),
+        });
+        if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+        return response.json();
+    } catch (error) {
+        console.error('Erreur lors de la récupération des statistiques transporteurs:', error);
+        throw error;
+    }
+};
+
+/**
  * Récupère les détails d'un transporteur par son ID
  * @param {number} transporterId - L'ID du transporteur
  * @returns {Promise<Object>} Les détails du transporteur
