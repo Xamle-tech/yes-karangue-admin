@@ -34,21 +34,21 @@ export default function DashboardPage() {
     {
       icon: Package,
       label: 'Colis enrôlés',
-      value: pendingShipments + deliveredShipments + (totalShipments - pendingShipments - deliveredShipments), // Approximation ou total réel
+      value: totalShipments,
       change: '+12%',
       isPositive: true,
-      subLabel: 'vs le dernier mois',
+      subLabel: 'total en base',
       iconBg: 'bg-gray-100',
       iconColor: 'text-gray-900',
       trendColor: 'text-green-600'
     },
     {
-      icon: Package, // Peut-être une icône différente pour "arrivés"
+      icon: Package,
       label: 'Colis arrivés',
       value: deliveredShipments,
       change: '+8%',
       isPositive: true,
-      subLabel: 'vs le dernier mois',
+      subLabel: 'total livrés',
       iconBg: 'bg-emerald-50',
       iconColor: 'text-emerald-600',
       trendColor: 'text-green-600'
