@@ -15,6 +15,7 @@ export const AUTH_ENDPOINTS = {
     REFRESH_TOKEN: '/api/v1/auth/refresh',
     ME: '/api/v1/auth/me',
     SET_PASSWORD: '/api/v1/auth/set-password',
+    VALIDATE_TOKEN: '/api/v1/auth/validate-token/{token}',
     ADMIN_DASHBOARD: '/api/v1/admin/dashboard',
     ADMIN_TRANSPORTERS: '/api/v1/admin/transporters',
 };

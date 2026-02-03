@@ -15,11 +15,31 @@ export default function SetPasswordPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token');
+  const [tokenChecked, setTokenChecked] = useState(false);
 
   useEffect(() => {
     if (!token) {
       setError('Token d\'invitation manquant ou invalide.');
+      setTokenChecked(true);
+      return;
     }
+    // Vérifier si le token est encore valide au chargement (évite d'afficher le formulaire si lien déjà utilisé)
+    const checkToken = async () => {
+      try {
+        const res = await fetch(buildUrl(AUTH_ENDPOINTS.VALIDATE_TOKEN.replace('{token}', token)));
+        const data = await res.json();
+        if (!res.ok && data.error?.code === 'INVALID_TOKEN') {
+          setError(
+            'Ce lien a déjà été utilisé ou n\'est plus valide. Si vous avez déjà créé votre mot de passe, connectez-vous.'
+          );
+        }
+      } catch {
+        // Ignorer les erreurs réseau, le formulaire pourra toujours tenter la soumission
+      } finally {
+        setTokenChecked(true);
+      }
+    };
+    checkToken();
   }, [token]);
 
   const handleSubmit = async (e) => {
@@ -60,9 +80,12 @@ export default function SetPasswordPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.error?.message || data.message || 'Erreur lors de la création du mot de passe'
-        );
+        const code = data.error?.code;
+        const message =
+          code === 'INVALID_TOKEN'
+            ? 'Ce lien a déjà été utilisé ou n\'est plus valide. Si vous avez déjà créé votre mot de passe, connectez-vous.'
+            : data.error?.message || data.message || 'Erreur lors de la création du mot de passe';
+        throw new Error(message);
       }
 
       // Succès
@@ -79,6 +102,9 @@ export default function SetPasswordPage() {
     }
   };
 
+  const linkAlreadyUsed =
+    error && error.includes('Ce lien a déjà été utilisé');
+
   if (success) {
     return (
       <div className="min-h-screen relative overflow-hidden bg-[#F5F5F0] flex flex-col items-center justify-center p-4">
@@ -94,6 +120,29 @@ export default function SetPasswordPage() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Mot de passe créé !</h1>
             <p className="text-gray-600">Redirection vers la page de connexion...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (linkAlreadyUsed) {
+    return (
+      <div className="min-h-screen relative overflow-hidden bg-[#F5F5F0] flex flex-col items-center justify-center p-4">
+        <div className="relative z-10 w-full max-w-md">
+          <div className="flex justify-center mb-8">
+            <img src={logo} alt="Yes Karangue" className="h-20 w-auto object-contain" />
+          </div>
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 text-center">
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm text-amber-800">{error}</p>
+            </div>
+            <button
+              onClick={() => navigate('/login')}
+              className="w-full bg-[#5B9BAD] hover:bg-[#4A8999] text-white font-semibold py-3 px-4 rounded-lg transition-all"
+            >
+              Aller à la connexion
+            </button>
           </div>
         </div>
       </div>
