@@ -28,6 +28,7 @@ export default function ClientsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
   const [totalItems, setTotalItems] = useState(0);
+  const [statsFromApi, setStatsFromApi] = useState({ total_shipments: 0 });
 
   // Charger les clients depuis l'API
   const loadClients = async () => {
@@ -49,6 +50,7 @@ export default function ClientsPage() {
       } else if (data.data) {
         setClients(data.data);
         setTotalItems(data.total || data.data.length);
+        if (data.stats) setStatsFromApi(data.stats);
       } else {
         setClients([]);
         setTotalItems(0);
@@ -137,7 +139,7 @@ export default function ClientsPage() {
     total: totalItems,
     withApp: clients.filter((c) => c.has_app || c.hasApp).length, // Handle both potentially
     withoutApp: clients.filter((c) => !c.has_app && !c.hasApp).length,
-    totalShipments: 72,
+    totalShipments: statsFromApi.total_shipments ?? 0,
   };
 
   const totalPages = Math.ceil(totalItems / itemsPerPage);

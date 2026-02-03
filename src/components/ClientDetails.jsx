@@ -1,42 +1,34 @@
-import { ArrowLeft, Edit2, Trash2, Box, Smartphone } from 'lucide-react';
+import { ArrowLeft, Edit2, Trash2, Box } from 'lucide-react';
+
+// Format date for activity display (relative or absolute)
+function formatActivityDate(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    if (diffMins < 60) return diffMins <= 1 ? 'À l\'instant' : `Il y a ${diffMins} min`;
+    if (diffHours < 24) return `Il y a ${diffHours} h`;
+    if (diffDays < 7) return `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
 export default function ClientDetails({ client, onBack, onEdit, onDelete }) {
     if (!client) return null;
 
-    // Mock activity data based on screenshot
-    // In a real app, this would come from an API endpoint like /clients/{id}/activities
-    const activities = [
-        {
-            id: 1,
-            type: 'receive',
-            title: 'Reçu un colis',
-            desc: 'Colis: YK-2025-00045',
-            time: 'Il y a 1 heure',
-            icon: Box,
-            iconBg: 'bg-[#F2EFE9]', // Beige/Brownish
-            iconColor: 'text-[#8B5E3C]', // Brown
-        },
-        {
-            id: 2,
-            type: 'send',
-            title: 'Déposé un colis',
-            desc: 'Colis: YK-2025-00044',
-            time: 'Il y a 1 heure',
-            icon: Box,
-            iconBg: 'bg-[#F2EFE9]',
-            iconColor: 'text-[#8B5E3C]',
-        },
-        {
-            id: 3,
-            type: 'app_login',
-            title: 'Connexion app',
-            desc: '',
-            time: 'Il y a 5 jours',
-            icon: Smartphone,
-            iconBg: 'bg-green-50',
-            iconColor: 'text-green-600',
-        },
-    ];
+    // Activités liées aux colis uniquement (fournies par l'API, pas de connexion app)
+    const activities = (client.activity || []).map((a, index) => ({
+        id: index + 1,
+        type: a.type,
+        title: a.title,
+        desc: a.description || '',
+        time: formatActivityDate(a.date),
+        icon: Box,
+        iconBg: 'bg-[#F2EFE9]',
+        iconColor: 'text-[#8B5E3C]',
+    }));
 
     const getInitials = (name) => {
         return name
@@ -142,7 +134,7 @@ export default function ClientDetails({ client, onBack, onEdit, onDelete }) {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <p className="text-gray-500 font-medium text-sm mb-1">Total colis</p>
-                                    <p className="text-4xl font-bold text-gray-900">20</p>
+                                    <p className="text-4xl font-bold text-gray-900">{client.total_shipments ?? 0}</p>
                                     <p className="text-gray-400 text-xs mt-2">Total</p>
                                 </div>
                                 <div className="p-3 bg-blue-50 rounded-xl">
@@ -157,8 +149,8 @@ export default function ClientDetails({ client, onBack, onEdit, onDelete }) {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <p className="text-gray-500 font-medium text-sm mb-1">Colis Envoyés</p>
-                                    <p className="text-4xl font-bold text-gray-900">12</p>
-                                    <p className="text-gray-400 text-xs mt-2">8 reçus</p>
+                                    <p className="text-4xl font-bold text-gray-900">{client.shipments_sent ?? 0}</p>
+                                    <p className="text-gray-400 text-xs mt-2">{client.shipments_received ?? 0} reçu(s)</p>
                                 </div>
                                 <div className="p-3 bg-[#FFF9EB] rounded-xl">
                                     <svg className="w-6 h-6 text-[#E8B44D]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -169,12 +161,14 @@ export default function ClientDetails({ client, onBack, onEdit, onDelete }) {
                         </div>
                     </div>
 
-                    {/* Activity History */}
+                    {/* Activity History (uniquement colis, pas de connexion app) */}
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 min-h-[400px]">
                         <h3 className="text-lg font-bold text-gray-900 mb-6">Historique d'activité</h3>
 
                         <div className="space-y-0">
-                            {activities.map((activity, index) => (
+                            {activities.length === 0 ? (
+                                <p className="text-gray-500 text-sm">Aucune activité liée aux colis</p>
+                            ) : activities.map((activity, index) => (
                                 <div key={activity.id} className="flex gap-4 group">
                                     {/* Icon */}
                                     <div className="relative">
