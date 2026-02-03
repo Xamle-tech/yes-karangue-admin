@@ -5,7 +5,7 @@ import { fetchRelayPoints } from '../../services/relayPointService';
 export default function UserForm({ user, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     full_name: user?.name || user?.full_name || '',
-    role: user?.role || '',
+    role: (user?.role || '').toString().toUpperCase() || '',
     email: user?.email || '',
     phone: user?.phone || '',
     relay_point_id: user?.relay_point_id || '',
@@ -34,11 +34,8 @@ export default function UserForm({ user, onSubmit, onCancel }) {
   }, []);
 
   const roleOptions = [
-    { value: 'CLIENT', label: 'Client' },
-    { value: 'AGENT', label: 'Agent' },
     { value: 'ADMIN', label: 'Administrateur' },
-    { value: 'CARRIER', label: 'Transporteur' },
-    { value: 'MANAGER', label: 'Manager' },
+    { value: 'AGENT', label: 'Agent' },
   ];
 
   const validateForm = () => {
@@ -59,7 +56,14 @@ export default function UserForm({ user, onSubmit, onCancel }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      const next = { ...prev, [name]: value };
+      // Point de retrait réservé aux agents : retirer si on passe en admin
+      if (name === 'role' && value !== 'AGENT') {
+        next.relay_point_id = '';
+      }
+      return next;
+    });
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -81,7 +85,9 @@ export default function UserForm({ user, onSubmit, onCancel }) {
     try {
       const payload = {
         ...formData,
-        relay_point_id: formData.relay_point_id ? parseInt(formData.relay_point_id, 10) : null
+        relay_point_id: formData.role === 'AGENT' && formData.relay_point_id
+          ? parseInt(formData.relay_point_id, 10)
+          : null
       };
       await onSubmit(payload);
     } catch (error) {
@@ -207,30 +213,32 @@ export default function UserForm({ user, onSubmit, onCancel }) {
               {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
             </div>
 
-            {/* Row 3: Point de retrait */}
-            <div className="md:col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Point de retrait
-              </label>
-              <div className="relative">
-                <select
-                  name="relay_point_id"
-                  value={formData.relay_point_id}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent outline-none transition appearance-none bg-white"
-                >
-                  <option value="">Sélectionner</option>
-                  {relayPoints.map(rp => (
-                    <option key={rp.id} value={rp.id}>{rp.name}</option>
-                  ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none">
-                  <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+            {/* Row 3: Point de retrait (uniquement pour les agents) */}
+            {formData.role === 'AGENT' && (
+              <div className="md:col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Point de retrait
+                </label>
+                <div className="relative">
+                  <select
+                    name="relay_point_id"
+                    value={formData.relay_point_id}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#5B9BAD] focus:border-transparent outline-none transition appearance-none bg-white"
+                  >
+                    <option value="">Sélectionner</option>
+                    {relayPoints.map(rp => (
+                      <option key={rp.id} value={rp.id}>{rp.name}</option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="flex gap-4 mt-8 pt-6 border-t border-gray-50">
