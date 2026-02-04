@@ -18,6 +18,7 @@ export const AUTH_ENDPOINTS = {
     VALIDATE_TOKEN: '/api/v1/auth/validate-token/{token}',
     ADMIN_DASHBOARD: '/api/v1/admin/dashboard',
     ADMIN_TRANSPORTERS: '/api/v1/admin/transporters',
+    ADMIN_SETTINGS: '/api/v1/admin/settings',
 };
 
 // Autres endpoints

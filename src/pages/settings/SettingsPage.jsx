@@ -1,29 +1,50 @@
 import { useState, useEffect } from 'react';
 import { Truck, Bell } from 'lucide-react';
+import { fetchSettings, updateSettings } from '../../services/settingsService';
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState('delivery');
   const [saveStatus, setSaveStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [settings, setSettings] = useState({
-    appName: 'Yes Karangue',
-    defaultLanguage: 'Yes Karangue',
-    timezone: 'Africa/Dakar',
-    currency: 'F CFA',
     maxWeight: 50,
     stampPrice: 500,
     commission: 5,
-    maintenanceMode: false,
-    apiLimit: 1000,
     emailNotifications: true,
     smsNotifications: true,
   });
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fetchSettings();
+        setSettings(prev => ({
+          ...prev,
+          maxWeight: data.maxWeight ?? prev.maxWeight,
+          stampPrice: data.stampPrice ?? prev.stampPrice,
+          commission: data.commission ?? prev.commission,
+          emailNotifications: data.emailNotifications ?? prev.emailNotifications,
+          smsNotifications: data.smsNotifications ?? prev.smsNotifications,
+        }));
+      } catch (err) {
+        console.error('Erreur chargement paramètres:', err);
+        setError('Impossible de charger les paramètres.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setSettings(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : (type === 'number' ? Number(value) : value)
     }));
   };
 
@@ -35,12 +56,23 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setSaveStatus('saving');
-    setTimeout(() => {
+    setError(null);
+    try {
+      await updateSettings({
+        commission: Number(settings.commission),
+        maxWeight: Number(settings.maxWeight),
+        stampPrice: Number(settings.stampPrice),
+        emailNotifications: Boolean(settings.emailNotifications),
+        smsNotifications: Boolean(settings.smsNotifications),
+      });
       setSaveStatus('success');
       setTimeout(() => setSaveStatus(null), 3000);
-    }, 1000);
+    } catch (err) {
+      setSaveStatus(null);
+      setError(err.message || 'Erreur lors de l\'enregistrement.');
+    }
   };
 
   const sections = [
@@ -48,12 +80,22 @@ export default function SettingsPage() {
     { id: 'notifications', label: 'Notifications', icon: Bell },
   ];
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900">Paramètres</h1>
+        <p className="text-gray-500">Chargement des paramètres...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Paramètres</h1>
-        <p className="text-gray-500 mt-1">Configurez les paramètres globaux de la plateforme</p>
+        <p className="text-gray-500 mt-1">Configurez les paramètres globaux de la plateforme (stockés en base de données)</p>
+        {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6 items-start">
@@ -117,6 +159,7 @@ export default function SettingsPage() {
                   onChange={handleChange}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-[#2E7D8A]/20 focus:border-[#2E7D8A] outline-none transition"
                 />
+                <p className="text-xs text-gray-500 mt-1.5">Pour le transporteur : pour chaque colis transporté, ce pourcentage du montant du timbre lui revient.</p>
               </div>
             </div>
           </div>
