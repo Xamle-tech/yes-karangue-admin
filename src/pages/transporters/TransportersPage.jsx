@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, Eye, LayoutGrid, List as ListIcon, ChevronDown, Truck, Bike, Car, Star, Download, MoreVertical } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Eye, LayoutGrid, List as ListIcon, ChevronDown, Truck, Bike, Car, Download, MoreVertical } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import TransporterForm from '../../components/forms/TransporterForm';
 import TransporterDetails from '../../components/TransporterDetails';
@@ -7,6 +7,14 @@ import ConfirmationModal from '../../components/modals/ConfirmationModal';
 import SuccessModal from '../../components/modals/SuccessModal';
 import { fetchTransporters, createTransporter, updateTransporter, deleteTransporter, fetchTransportersStatistics } from '../../services/transporterService';
 import Toast from '../../components/Toast';
+
+// Formater les revenus (FCFA) pour l'affichage
+const formatEarnings = (value) => {
+  const n = Number(value) || 0;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M F`;
+  if (n >= 1_000) return `${Math.floor(n / 1_000)}K F`;
+  return `${n} F`;
+};
 
 // Fonction utilitaire pour obtenir les initiales
 const getInitials = (name) => {
@@ -29,7 +37,14 @@ export default function TransportersPage() {
   const [viewMode, setViewMode] = useState('list');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  const [transporterStats, setTransporterStats] = useState({ by_station: [], by_vehicle_type: [] });
+  const [transporterStats, setTransporterStats] = useState({
+    by_station: [],
+    by_vehicle_type: [],
+    total_transporters: 0,
+    total_courses: 0,
+    courses_en_moyenne: 0,
+    total_revenue_fcfa: 0,
+  });
 
   // Couleurs pour le graphique par type de véhicule
   const VEHICLE_COLORS = ['#4CAF50', '#E8B44D', '#5B9BAD', '#F44336', '#9E9E9E', '#2196F3', '#FF9800'];
@@ -60,10 +75,21 @@ export default function TransportersPage() {
       setTransporterStats({
         by_station: Array.isArray(data.by_station) ? data.by_station : [],
         by_vehicle_type: Array.isArray(data.by_vehicle_type) ? data.by_vehicle_type : [],
+        total_transporters: Number(data.total_transporters) || 0,
+        total_courses: Number(data.total_courses) || 0,
+        courses_en_moyenne: Number(data.courses_en_moyenne) || 0,
+        total_revenue_fcfa: Number(data.total_revenue_fcfa) || 0,
       });
     } catch (err) {
       console.error('Erreur stats transporteurs:', err);
-      setTransporterStats({ by_station: [], by_vehicle_type: [] });
+      setTransporterStats({
+        by_station: [],
+        by_vehicle_type: [],
+        total_transporters: 0,
+        total_courses: 0,
+        courses_en_moyenne: 0,
+        total_revenue_fcfa: 0,
+      });
     }
   };
 
@@ -147,12 +173,16 @@ export default function TransportersPage() {
     }
   }
 
-  // Calcul des statistiques
+  // Statistiques : données réelles (transporteurs actifs, course en moyenne, revenus)
   const stats = {
     active: transporters.filter(t => t.status === 'active').length.toString(),
-    rating: '4.7', // Mocked for design match initially or calc if data exists
-    earnings: '12.8M' // Mocked or calc
-  }
+    coursesEnMoyenne: transporterStats.courses_en_moyenne,
+    earnings: transporterStats.total_revenue_fcfa >= 1_000_000
+      ? `${(transporterStats.total_revenue_fcfa / 1_000_000).toFixed(1)}M`
+      : transporterStats.total_revenue_fcfa >= 1_000
+        ? `${Math.floor(transporterStats.total_revenue_fcfa / 1_000)}K`
+        : String(transporterStats.total_revenue_fcfa),
+  };
 
   // Conditional Rendering for Form View
   if (showForm) {
@@ -229,14 +259,14 @@ export default function TransportersPage() {
           </div>
         </div>
 
-        {/* Rating */}
+        {/* Course en moyenne */}
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-500 font-medium mb-1">Note moyenne</p>
-            <p className="text-3xl font-bold text-gray-900">{stats.rating}</p>
+            <p className="text-sm text-gray-500 font-medium mb-1">Course en moyenne</p>
+            <p className="text-3xl font-bold text-gray-900">{stats.coursesEnMoyenne}</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-[#FFF9EB] flex items-center justify-center">
-            <Star className="h-6 w-6 text-[#E8B44D] fill-[#E8B44D]" />
+            <Truck className="h-6 w-6 text-[#E8B44D]" />
           </div>
         </div>
 
@@ -327,8 +357,10 @@ export default function TransportersPage() {
                         <span className="text-sm font-semibold text-gray-900">{profile.vehicle_plate || 'SN-XXX-XXX'}</span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{transporter.phone || '+221 -- --- -- --'}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{transporter.deliveries_count || Math.floor(Math.random() * 300)}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{transporter.total_earnings ? `${transporter.total_earnings}F` : `${Math.floor(Math.random() * 5000)}K`}</td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{transporter.deliveries_count ?? 0}</td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                        {formatEarnings(transporter.total_earnings ?? transporter.total_earnings_fcfa ?? 0)}
+                      </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${transporter.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-600'}`}>
                           {transporter.status === 'active' ? 'Actif' : 'Inactif'}
