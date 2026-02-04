@@ -81,14 +81,12 @@ export default function DashboardPage() {
     },
   ];
 
-  const chartData = [
-    { month: 'Jan', colis: 65, utilisateurs: 240 },
-    { month: 'Fév', colis: 78, utilisateurs: 310 },
-    { month: 'Mar', colis: 95, utilisateurs: 380 },
-    { month: 'Avr', colis: 112, utilisateurs: 450 },
-    { month: 'Mai', colis: 145, utilisateurs: 520 },
-    { month: 'Juin', colis: 168, utilisateurs: 630 },
-  ];
+  // Activité mensuelle : données réelles de l'API (6 derniers mois)
+  const chartData = Array.isArray(dashboardData?.monthly_activity) && dashboardData.monthly_activity.length > 0
+    ? dashboardData.monthly_activity
+    : [
+        { month: '—', colis: 0, utilisateurs: 0 },
+      ];
 
   // Distribution des statuts
   const remainder = Math.max(0, totalShipments - pendingShipments - deliveredShipments);
