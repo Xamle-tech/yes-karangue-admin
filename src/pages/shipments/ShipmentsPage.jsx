@@ -30,7 +30,7 @@ function isDelivered(status) {
 export default function ShipmentsPage() {
   const [shipments, setShipments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ total: 0, pending: 0, transit: 0, delivered: 0, stamp: 0 });
+  const [stats, setStats] = useState({ total: 0, pending: 0, transit: 0, arrived: 0, delivered: 0 });
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
@@ -61,8 +61,8 @@ export default function ShipmentsPage() {
           total: Number(res.stats.total) || 0,
           pending: Number(res.stats.pending) || 0,
           transit: Number(res.stats.transit) || 0,
+          arrived: Number(res.stats.arrived) || 0,
           delivered: Number(res.stats.delivered) || 0,
-          stamp: Number(res.stats.stamp) || 0,
         });
       }
     } catch (err) {
@@ -117,7 +117,7 @@ export default function ShipmentsPage() {
     total: String(stats.total),
     pending: String(stats.pending),
     transit: String(stats.transit),
-    stamp: String(stats.stamp),
+    arrived: String(stats.arrived),
   };
 
   if (showForm) {
@@ -193,8 +193,8 @@ export default function ShipmentsPage() {
         </div>
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-500 font-medium mb-1">Timbre à confirmer</p>
-            <p className="text-3xl font-bold text-gray-900">{statsDisplay.stamp}</p>
+            <p className="text-sm text-gray-500 font-medium mb-1">Arrivé</p>
+            <p className="text-3xl font-bold text-gray-900">{statsDisplay.arrived}</p>
           </div>
           <div className="p-3 bg-yellow-50 rounded-xl">
             <Package className="h-6 w-6 text-yellow-600" strokeWidth={1.5} />
