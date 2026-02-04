@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, MapPin, User, Clock, ChevronDown } from 'lucide-react';
+import { ArrowLeft, MapPin, User, ChevronDown } from 'lucide-react';
 import { fetchRelayPointTypes } from '../../services/relayPointService';
 import { fetchUsers } from '../../services/userService';
 
@@ -269,16 +269,6 @@ export default function PointForm({ point, onSubmit, onCancel }) {
 
 
                     </div>
-                </div>
-
-                {/* Horaires d'ouverture (Only in Edit Mode usually, or if Design shows it always) */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center gap-3 mb-6">
-                        <Clock className="h-5 w-5 text-[#305669]" />
-                        <h2 className="text-lg font-bold text-gray-900">Horaires d'ouverture</h2>
-                    </div>
-                    {/* Placeholder for Hours Editor - assuming read-only or simple inputs for now as per Image 2 (it just shows the section header in Image 2 really) */}
-                    <p className="text-sm text-gray-500 italic">Configuration des horaires (À implémenter selon le format des données)</p>
                 </div>
 
                 {/* Footer Actions */}

@@ -1,4 +1,4 @@
-import { ArrowLeft, Edit2, Trash2, MapPin, Phone, Mail, Clock, Users, Package, Calendar } from 'lucide-react';
+import { ArrowLeft, Edit2, Trash2, MapPin, Phone, Mail, Users, Package, Calendar } from 'lucide-react';
 
 export default function PointDetails({ point, onBack, onEdit, onDelete }) {
   if (!point) return null;
@@ -16,26 +16,9 @@ export default function PointDetails({ point, onBack, onEdit, onDelete }) {
     return labels[type] || type;
   };
 
-  const getDaysLabel = (day) => {
-    const labels = {
-      monday: 'Lundi',
-      tuesday: 'Mardi',
-      wednesday: 'Mercredi',
-      thursday: 'Jeudi',
-      friday: 'Vendredi',
-      saturday: 'Samedi',
-      sunday: 'Dimanche',
-    };
-    return labels[day] || day;
-  };
-
-  const workingDays = [
-    'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
-  ];
-
-  // Mock stats if missing
-  const activeAgents = point.agents || 0;
-  const processedParcels = point.shipmentsProcessed || point.shipments_count || 0;
+  // Données réelles (API renvoie agents_count et parcels_count)
+  const activeAgents = Number(point.agents_count ?? point.agents) || 0;
+  const processedParcels = Number(point.parcels_count ?? point.shipmentsProcessed ?? point.shipments_count) || 0;
 
   const getManagerName = (point) => {
     if (point.manager_name) return point.manager_name;
@@ -167,45 +150,6 @@ export default function PointDetails({ point, onBack, onEdit, onDelete }) {
               <div className="h-12 w-12 rounded-xl bg-[#FFF9EB] flex items-center justify-center">
                 <Package className="h-6 w-6 text-[#E8B44D]" />
               </div>
-            </div>
-          </div>
-
-          {/* Opening Hours */}
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-            <h3 className="text-xl font-bold text-gray-900 mb-6">Horaires d'ouverture</h3>
-
-            <div className="space-y-0">
-              <div className="grid grid-cols-3 text-sm font-medium text-gray-500 mb-4 px-2">
-                <div>Jour</div>
-                <div>Disponibilité</div>
-                <div className="text-right">Horaires</div>
-              </div>
-
-              {workingDays.map((day) => {
-                const hours = point.workingHours?.[day];
-                const isOpen = hours && !hours.closed;
-
-                return (
-                  <div key={day} className="grid grid-cols-3 py-4 border-b border-gray-50 last:border-0 items-center px-2 hover:bg-gray-50 transition rounded-lg">
-                    <div className="font-medium text-gray-900 capitalize">{getDaysLabel(day)}</div>
-                    <div>
-                      {isOpen ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#FFF9EB] text-[#B88726] text-xs font-bold">
-                          <span className="h-1.5 w-1.5 rounded-full bg-[#E8B44D]"></span>
-                          Ouvert
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 text-gray-400 text-sm">
-                          Fermé
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-right text-gray-600 font-medium">
-                      {isOpen ? `${hours.start} - ${hours.end}` : '--:--'}
-                    </div>
-                  </div>
-                );
-              })}
             </div>
           </div>
         </div>

@@ -4,7 +4,7 @@ import PointForm from '../../components/forms/PointForm';
 import PointDetails from '../../components/modals/PointDetails';
 import ConfirmationModal from '../../components/modals/ConfirmationModal';
 import Toast from '../../components/Toast';
-import { fetchRelayPoints, deleteRelayPoint, createRelayPoint, updateRelayPoint } from '../../services/relayPointService';
+import { fetchRelayPoints, fetchRelayPointById, deleteRelayPoint, createRelayPoint, updateRelayPoint } from '../../services/relayPointService';
 import SuccessModal from '../../components/modals/SuccessModal';
 import ErrorModal from '../../components/modals/ErrorModal';
 
@@ -131,9 +131,17 @@ export default function PointsPage() {
     setViewMode('edit');
   };
 
-  const handleDetailsClick = (point) => {
-    setSelectedPoint(point);
-    setViewMode('details');
+  const handleDetailsClick = async (point) => {
+    try {
+      setLoading(true);
+      const fullPoint = await fetchRelayPointById(point.id);
+      setSelectedPoint(fullPoint);
+      setViewMode('details');
+    } catch (err) {
+      setToast({ message: err.message || 'Erreur chargement du point', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleBackToList = () => {
