@@ -10,7 +10,7 @@ import {
   ChevronDown,
   Filter,
   MapPin,
-  HandHelping
+  PackageCheck
 } from 'lucide-react';
 import boxIcon from '../../icons/box.png';
 import proiconsBox from '../../icons/proicons_box.png';
@@ -240,7 +240,7 @@ export default function AgentDashboardPage() {
             onClick={() => setShowRemiseColis(true)}
             className="flex items-center gap-2 bg-[#6B7F5C] text-white px-6 py-3 rounded-full hover:bg-[#5A6E4B] transition font-medium shadow-sm"
           >
-            <HandHelping className="h-5 w-5" />
+            <PackageCheck className="h-5 w-5" />
             Remise de colis
           </button>
           <button
