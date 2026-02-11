@@ -9,7 +9,8 @@ import {
   List,
   ChevronDown,
   Filter,
-  MapPin
+  MapPin,
+  HandHelping
 } from 'lucide-react';
 import boxIcon from '../../icons/box.png';
 import proiconsBox from '../../icons/proicons_box.png';
@@ -18,6 +19,7 @@ import AgentShipmentForm from '../../components/forms/AgentShipmentForm';
 import AgentShipmentDetails from '../../components/AgentShipmentDetails';
 import ShipmentStatusUpdate from '../../components/modals/ShipmentStatusUpdate';
 import ReceiveShipmentModal from '../../components/modals/ReceiveShipmentModal';
+import RemiseColisModal from '../../components/modals/RemiseColisModal';
 import ShipmentSuccessModal from '../../components/modals/ShipmentSuccessModal';
 import { fetchAgentShipments, createAgentShipment, lookupAgentShipment } from '../../services/agentShipmentsService';
 
@@ -28,6 +30,7 @@ export default function AgentDashboardPage() {
   const [showForm, setShowForm] = useState(false); // Now controls full-page view
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
   const [showReceive, setShowReceive] = useState(false);
+  const [showRemiseColis, setShowRemiseColis] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [createdShipment, setCreatedShipment] = useState(null);
@@ -234,6 +237,13 @@ export default function AgentDashboardPage() {
             Réception de Colis
           </button>
           <button
+            onClick={() => setShowRemiseColis(true)}
+            className="flex items-center gap-2 bg-[#6B7F5C] text-white px-6 py-3 rounded-full hover:bg-[#5A6E4B] transition font-medium shadow-sm"
+          >
+            <HandHelping className="h-5 w-5" />
+            Remise de colis
+          </button>
+          <button
             onClick={() => setShowForm(true)}
             className="flex items-center gap-2 bg-[#E8B44D] text-white px-6 py-3 rounded-full hover:bg-[#D9A53C] transition font-medium shadow-sm"
           >
@@ -285,6 +295,13 @@ export default function AgentDashboardPage() {
           onClose={() => setShowReceive(false)}
           onReceive={handleReceiveShipment}
           shipments={shipments}
+        />
+      )}
+
+      {showRemiseColis && (
+        <RemiseColisModal
+          onClose={() => setShowRemiseColis(false)}
+          onDelivered={() => loadShipments()}
         />
       )}
 

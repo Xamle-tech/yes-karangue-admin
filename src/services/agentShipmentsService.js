@@ -142,6 +142,58 @@ export const createAgentShipment = async (shipmentData) => {
 };
 
 /**
+ * Remise de colis : recherche un colis arrivé par code de retrait (4 chiffres)
+ * @param {string} code - Code de retrait à 4 chiffres
+ * @returns {Promise<Object>} Le colis trouvé (status ARRIVE)
+ */
+export const lookupByPickupCode = async (code) => {
+    try {
+        const url = buildUrl(`/api/v1/agent/shipments/by-pickup-code?code=${encodeURIComponent(code)}`);
+        const response = await authorizedFetch(url, {
+            method: 'GET',
+            headers: getDefaultHeaders(),
+        });
+        if (!response.ok) {
+            if (response.status === 404) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err?.error?.message || 'Aucun colis arrivé avec ce code.');
+            }
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+        return response.json();
+    } catch (error) {
+        console.error('Erreur lookup by pickup code:', error);
+        throw error;
+    }
+};
+
+/**
+ * Remise au destinataire : valide le code et marque le colis comme livré
+ * @param {string} trackingNumber - Numéro de suivi
+ * @param {string} pickupCode - Code de retrait à 4 chiffres
+ * @returns {Promise<Object>}
+ */
+export const deliverAgentShipment = async (trackingNumber, pickupCode) => {
+    try {
+        const url = buildUrl(`/api/v1/agent/shipments/${encodeURIComponent(trackingNumber)}/deliver`);
+        const response = await authorizedFetch(url, {
+            method: 'POST',
+            headers: getDefaultHeaders(),
+            body: JSON.stringify({ pickup_code: pickupCode }),
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            const msg = err?.error?.message || (response.status === 422 ? 'Code de retrait incorrect.' : `Erreur ${response.status}`);
+            throw new Error(msg);
+        }
+        return response.json();
+    } catch (error) {
+        console.error('Erreur remise colis:', error);
+        throw error;
+    }
+};
+
+/**
  * Recherche un colis par son numéro de suivi
  * @param {string} trackingNumber - Numéro de suivi (ex: YK-2025-00001)
  * @returns {Promise<Object>} Les détails du colis trouvé
