@@ -147,7 +147,9 @@ export default function AgentDashboardPage() {
       'DEPOT': { color: 'bg-orange-100 text-orange-700', icon: '📦', label: 'Dépôt' },
       'PRISE_EN_CHARGE': { color: 'bg-blue-100 text-blue-700', icon: '📋', label: 'Prise en charge' },
       'EN_COURS_LIVRAISON': { color: 'bg-yellow-100 text-yellow-700', icon: '🚚', label: 'En cours de livraison' },
-      'RECUPERE': { color: 'bg-purple-100 text-purple-700', icon: '📥', label: 'Récupéré' },
+      'EN_COURS_DE_LIVRAISON': { color: 'bg-yellow-100 text-yellow-700', icon: '🚚', label: 'En cours de livraison' },
+      'ARRIVE': { color: 'bg-purple-100 text-purple-700', icon: '📥', label: 'Arrivé' },
+      'RECUPERE': { color: 'bg-purple-100 text-purple-700', icon: '📥', label: 'Arrivé' },
       'LIVRE': { color: 'bg-green-100 text-green-700', icon: '✅', label: 'Livré' },
     };
 
@@ -184,10 +186,24 @@ export default function AgentDashboardPage() {
     },
     {
       label: 'En cours',
-      value: shipments.filter(s => s.status === 'EN_COURS_LIVRAISON').length.toString(),
+      value: shipments.filter(s => s.status === 'EN_COURS_LIVRAISON' || s.status === 'EN_COURS_DE_LIVRAISON').length.toString(),
       icon: Package,
       color: 'bg-[#FEF9EA] text-[#DFA527]',
       iconColor: 'text-[#DFA527]'
+    },
+    {
+      label: 'Arrivé',
+      value: shipments.filter(s => s.status === 'ARRIVE' || s.status === 'RECUPERE').length.toString(),
+      icon: Package,
+      color: 'bg-purple-50 text-purple-700',
+      iconColor: 'text-purple-700'
+    },
+    {
+      label: 'Livré',
+      value: shipments.filter(s => s.status === 'LIVRE').length.toString(),
+      icon: Package,
+      color: 'bg-green-50 text-green-700',
+      iconColor: 'text-green-700'
     },
   ];
 
@@ -437,8 +453,8 @@ export default function AgentDashboardPage() {
                             style={{
                               width: `${shipment.status === 'DEPOT' ? 20 :
                                 shipment.status === 'PRISE_EN_CHARGE' ? 40 :
-                                  shipment.status === 'EN_COURS_LIVRAISON' ? 60 :
-                                    shipment.status === 'RECUPERE' ? 80 :
+                                  (shipment.status === 'EN_COURS_LIVRAISON' || shipment.status === 'EN_COURS_DE_LIVRAISON') ? 60 :
+                                    (shipment.status === 'ARRIVE' || shipment.status === 'RECUPERE') ? 80 :
                                       shipment.status === 'LIVRE' ? 100 : 0
                                 }%`
                             }}
@@ -448,8 +464,8 @@ export default function AgentDashboardPage() {
                           {
                             shipment.status === 'DEPOT' ? '1/5' :
                               shipment.status === 'PRISE_EN_CHARGE' ? '2/5' :
-                                shipment.status === 'EN_COURS_LIVRAISON' ? '3/5' :
-                                  shipment.status === 'RECUPERE' ? '4/5' :
+                                (shipment.status === 'EN_COURS_LIVRAISON' || shipment.status === 'EN_COURS_DE_LIVRAISON') ? '3/5' :
+                                  (shipment.status === 'ARRIVE' || shipment.status === 'RECUPERE') ? '4/5' :
                                     shipment.status === 'LIVRE' ? '5/5' : '0/5'
                           }
                         </span>
@@ -516,14 +532,16 @@ export default function AgentDashboardPage() {
                   {/* Status Text Only - colored based on status */}
                   <span className={`text-sm font-bold ${shipment.status === 'DEPOT' ? 'text-gray-500' :
                     shipment.status === 'PRISE_EN_CHARGE' ? 'text-[#5B9BAD]' :
-                      shipment.status === 'EN_COURS_LIVRAISON' ? 'text-[#E8B44D]' :
-                        'text-green-600'
+                      (shipment.status === 'EN_COURS_LIVRAISON' || shipment.status === 'EN_COURS_DE_LIVRAISON') ? 'text-[#E8B44D]' :
+                        (shipment.status === 'ARRIVE' || shipment.status === 'RECUPERE') ? 'text-purple-600' :
+                          'text-green-600'
                     }`}>
                     {
                       shipment.status === 'DEPOT' ? 'Dépôt' :
                         shipment.status === 'PRISE_EN_CHARGE' ? 'Prise en charge' :
-                          shipment.status === 'EN_COURS_LIVRAISON' ? 'En cours' :
-                            shipment.status
+                          (shipment.status === 'EN_COURS_LIVRAISON' || shipment.status === 'EN_COURS_DE_LIVRAISON') ? 'En cours' :
+                            (shipment.status === 'ARRIVE' || shipment.status === 'RECUPERE') ? 'Arrivé' :
+                              shipment.status === 'LIVRE' ? 'Livré' : shipment.status
                     }
                   </span>
                 </div>
@@ -565,8 +583,8 @@ export default function AgentDashboardPage() {
                     {
                       shipment.status === 'DEPOT' ? '1/5' :
                         shipment.status === 'PRISE_EN_CHARGE' ? '2/5' :
-                          shipment.status === 'EN_COURS_LIVRAISON' ? '3/5' :
-                            shipment.status === 'RECUPERE' ? '4/5' :
+                          (shipment.status === 'EN_COURS_LIVRAISON' || shipment.status === 'EN_COURS_DE_LIVRAISON') ? '3/5' :
+                            (shipment.status === 'ARRIVE' || shipment.status === 'RECUPERE') ? '4/5' :
                               shipment.status === 'LIVRE' ? '5/5' : '0/5'
                     }
                   </span>
@@ -577,8 +595,8 @@ export default function AgentDashboardPage() {
                     style={{
                       width: `${shipment.status === 'DEPOT' ? 20 :
                         shipment.status === 'PRISE_EN_CHARGE' ? 40 :
-                          shipment.status === 'EN_COURS_LIVRAISON' ? 60 :
-                            shipment.status === 'RECUPERE' ? 80 :
+                          (shipment.status === 'EN_COURS_LIVRAISON' || shipment.status === 'EN_COURS_DE_LIVRAISON') ? 60 :
+                            (shipment.status === 'ARRIVE' || shipment.status === 'RECUPERE') ? 80 :
                               shipment.status === 'LIVRE' ? 100 : 0
                         }%`
                     }}
