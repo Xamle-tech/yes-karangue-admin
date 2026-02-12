@@ -144,19 +144,18 @@ export default function AgentDashboardPage() {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      'DEPOT': { color: 'bg-orange-100 text-orange-700', icon: '📦', label: 'Dépôt' },
-      'PRISE_EN_CHARGE': { color: 'bg-blue-100 text-blue-700', icon: '📋', label: 'Prise en charge' },
-      'EN_COURS_LIVRAISON': { color: 'bg-yellow-100 text-yellow-700', icon: '🚚', label: 'En cours de livraison' },
-      'EN_COURS_DE_LIVRAISON': { color: 'bg-yellow-100 text-yellow-700', icon: '🚚', label: 'En cours de livraison' },
-      'ARRIVE': { color: 'bg-purple-100 text-purple-700', icon: '📥', label: 'Arrivé' },
-      'RECUPERE': { color: 'bg-purple-100 text-purple-700', icon: '📥', label: 'Arrivé' },
-      'LIVRE': { color: 'bg-green-100 text-green-700', icon: '✅', label: 'Livré' },
+      'DEPOT': { color: 'bg-orange-100 text-orange-700', label: 'Dépôt' },
+      'PRISE_EN_CHARGE': { color: 'bg-blue-100 text-blue-700', label: 'Prise en charge' },
+      'EN_COURS_LIVRAISON': { color: 'bg-yellow-100 text-yellow-700', label: 'En cours de livraison' },
+      'EN_COURS_DE_LIVRAISON': { color: 'bg-yellow-100 text-yellow-700', label: 'En cours de livraison' },
+      'ARRIVE': { color: 'bg-purple-100 text-purple-700', label: 'Arrivé' },
+      'RECUPERE': { color: 'bg-purple-100 text-purple-700', label: 'Arrivé' },
+      'LIVRE': { color: 'bg-green-100 text-green-700', label: 'Livré' },
     };
 
     const config = statusConfig[status] || statusConfig['DEPOT'];
     return (
-      <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold ${config.color}`}>
-        <span>{config.icon}</span>
+      <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold ${config.color}`}>
         {config.label || status}
       </span>
     );
