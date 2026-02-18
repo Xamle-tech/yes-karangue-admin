@@ -115,32 +115,51 @@ export default function RemiseColisModal({ onClose, onDelivered }) {
           )}
 
           {step === 'confirm' && parcel && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-[#E8F4F7] rounded-xl flex items-center justify-center">
+            <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+              <p className="text-sm text-gray-600 font-medium">
+                Vérifiez les détails du colis avant de remettre au destinataire.
+              </p>
+
+              {/* En-tête colis */}
+              <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                <div className="w-12 h-12 bg-[#E8F4F7] rounded-xl flex items-center justify-center flex-shrink-0">
                   <Package className="w-6 h-6 text-[#5B9BAD]" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <h3 className="text-lg font-bold text-gray-900">{parcel.tracking_number}</h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 truncate">
                     {parcel.sender_address || '–'} → {parcel.recipient_address || '–'}
                   </p>
                 </div>
-                <span className="ml-auto px-3 py-1 bg-gray-100 rounded-full text-xs font-medium text-gray-600">
+                <span className="px-3 py-1 bg-gray-200 rounded-full text-xs font-medium text-gray-700 flex-shrink-0">
                   {parcel.weight_kg ?? '–'} kg
                 </span>
-                <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-medium">
+                <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-medium flex-shrink-0">
                   {parcel.status}
                 </span>
               </div>
 
-              <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-xl">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-gray-700 font-bold border border-gray-100">
-                  <User className="w-6 h-6 text-gray-400" />
+              {/* Détails complets */}
+              <div className="grid gap-4 text-sm">
+                <div className="p-4 border border-gray-200 rounded-xl space-y-3">
+                  <h4 className="font-semibold text-gray-900 border-b border-gray-100 pb-2">Expéditeur</h4>
+                  <p><span className="text-gray-500">Nom :</span> {[parcel.sender_first_name, parcel.sender_last_name].filter(Boolean).join(' ') || '–'}</p>
+                  <p><span className="text-gray-500">Tél :</span> {parcel.sender_phone || '–'}</p>
+                  <p><span className="text-gray-500">Adresse :</span> {parcel.sender_address || '–'}</p>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">{recipientName}</h4>
-                  <p className="text-sm text-[#5B9BAD] font-medium">Destinataire</p>
+                <div className="p-4 border border-gray-200 rounded-xl space-y-3">
+                  <h4 className="font-semibold text-gray-900 border-b border-gray-100 pb-2">Destinataire</h4>
+                  <p><span className="text-gray-500">Nom :</span> {recipientName}</p>
+                  <p><span className="text-gray-500">Tél :</span> {parcel.recipient_phone || '–'}</p>
+                  <p><span className="text-gray-500">Adresse :</span> {parcel.recipient_address || '–'}</p>
+                </div>
+                <div className="p-4 border border-gray-200 rounded-xl space-y-2">
+                  <h4 className="font-semibold text-gray-900 border-b border-gray-100 pb-2">Contenu</h4>
+                  <p><span className="text-gray-500">Description :</span> {parcel.content_description || '–'}</p>
+                  <p><span className="text-gray-500">Poids :</span> {parcel.weight_kg ?? '–'} kg</p>
+                  {(parcel.originRelayPoint?.name || parcel.destinationRelayPoint?.name) && (
+                    <p><span className="text-gray-500">Points :</span> {parcel.originRelayPoint?.name || '–'} → {parcel.destinationRelayPoint?.name || '–'}</p>
+                  )}
                 </div>
               </div>
 

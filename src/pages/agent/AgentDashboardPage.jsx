@@ -133,13 +133,9 @@ export default function AgentDashboardPage() {
     }
   };
 
-  const handleReceiveShipment = (shipment) => {
-    setShipments(
-      shipments.map((s) =>
-        s.id === shipment.id ? { ...s, status: 'Au point', progress: 4 } : s
-      )
-    );
+  const handleReceiveShipment = () => {
     setShowReceive(false);
+    loadShipments();
   };
 
   const getStatusBadge = (status) => {
