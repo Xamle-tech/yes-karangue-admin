@@ -108,12 +108,12 @@ export default function UserDetails({ user, onBack, onEdit, onDelete }) {
                             </div>
                             <div className="flex items-center gap-3 text-gray-600">
                                 <div className="w-8 flex justify-center"><MapPin className="h-5 w-5 text-gray-400" /></div>
-                                <span className="text-sm font-medium">{user.location || 'Dakar, Sénégal'}</span>
+                                <span className="text-sm font-medium">{user.relay_point?.address ?? user.location ?? 'Dakar, Sénégal'}</span>
                             </div>
-                            {user.pointName && (
+                            {(user.relay_point?.name || user.pointName) && (
                                 <div className="flex items-center gap-3 text-gray-600">
                                     <div className="w-8 flex justify-center"><User className="h-5 w-5 text-gray-400" /></div>
-                                    <span className="text-sm font-medium">{user.pointName}</span>
+                                    <span className="text-sm font-medium">{user.relay_point?.name ?? user.pointName}</span>
                                 </div>
                             )}
                             <div className="flex items-center gap-3 text-gray-600">

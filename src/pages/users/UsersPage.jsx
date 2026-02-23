@@ -384,14 +384,14 @@ export default function UsersPage() {
                         {user.email}
                       </td>
 
-                      {/* Point / Localisation */}
+                      {/* Point / Localisation (point relais pour les agents) */}
                       <td className="px-6 py-4 text-sm">
-                        {user.pointName ? (
+                        {(user.relay_point?.name || user.pointName) ? (
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-gray-400" />
                             <div>
-                              <p className="font-medium text-gray-900">{user.pointName}</p>
-                              <p className="text-xs text-gray-500">{user.location}</p>
+                              <p className="font-medium text-gray-900">{user.relay_point?.name ?? user.pointName}</p>
+                              <p className="text-xs text-gray-500">{user.relay_point?.address ?? user.location ?? ''}</p>
                             </div>
                           </div>
                         ) : (
