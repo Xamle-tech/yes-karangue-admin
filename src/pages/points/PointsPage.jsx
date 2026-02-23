@@ -56,8 +56,8 @@ export default function PointsPage() {
   const stats = {
     total: points.length,
     active: points.filter((p) => p.is_active || p.status === 'Actif').length,
-    agents: points.reduce((acc, curr) => acc + (curr.agents || 0), 0),
-    shipments: points.reduce((acc, curr) => acc + (curr.shipmentsProcessed || curr.shipments_count || 0), 0),
+    agents: points.reduce((acc, curr) => acc + (curr.agents_count ?? curr.agents ?? 0), 0),
+    shipments: points.reduce((acc, curr) => acc + (curr.parcels_count ?? curr.shipmentsProcessed ?? curr.shipments_count ?? 0), 0),
   };
 
   const handleAddPoint = async (formData) => {
@@ -340,10 +340,10 @@ export default function PointsPage() {
 
                       </td>
                       <td className="px-6 py-4 text-sm font-bold text-blue-600">
-                        {point.agents || 0}
+                        {point.agents_count ?? point.agents ?? 0}
                       </td>
                       <td className="px-6 py-4 text-sm font-bold text-purple-600">
-                        {point.shipmentsProcessed || point.shipments_count || 0}
+                        {point.parcels_count ?? point.shipmentsProcessed ?? point.shipments_count ?? 0}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${point.is_active || point.status === 'Actif'
